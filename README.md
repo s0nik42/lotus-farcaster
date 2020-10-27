@@ -68,7 +68,6 @@ tail -n 100 -f /var/log/syslog
 All Set you can know automated it with cron
 ```
 cp lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.cron /etc/cron.d/lotus-exporter-farcaster
-chmod +x /etc/cron.d/lotus-exporter-farcaster
 ```
 
 ## Tested environments
