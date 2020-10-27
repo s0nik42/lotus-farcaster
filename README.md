@@ -70,6 +70,9 @@ All Set you can know automated it with cron
 cp lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.cron /etc/cron.d/lotus-exporter-farcaster
 ```
 
+## Instalation of the Grafana Dashboard 
+Import in Grafana the relevent dashboard file from the grafana-dashboard folder 
+
 ## Tested environments
 * Grafana : 7.1.5
 * Prometheus : 2.20.1
