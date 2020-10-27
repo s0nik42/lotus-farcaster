@@ -1,3 +1,5 @@
+![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/screenshots/screenshot001.png)
+
 # lotus-farcaster 
 is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node
 It leverages [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/) and Python.
