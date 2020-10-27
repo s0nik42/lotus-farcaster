@@ -45,6 +45,7 @@ It generates metrics that are exposed by node-exporter to prometheus.
 cd /usr/src
 git clone https://github.com/s0nik42/lotus-farcaster.git
 cp lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.py /usr/local/bin
+chmod +x /usr/local/bin/lotus-exporter-farcaster.py
 ```
 ### First execution (assuming usernmane is "lotus")
 If the script is executed with the same user than lotus miner and lotus node. its configuration less.
@@ -56,11 +57,19 @@ sudo -u lotus /usr/local/bin/lotus-exporter-farcaster.py
 ### Testing the prometheus-node-exporter integration
 We're assuming here you already have a working prometheus-node-exporter
 * The following line is exporting the metrics to the local prometheus-node-exporter. It should end up nicely and you should look at the they is no error coming from rometheus-node-exporter.
+* You may need to provide lotus user "write access" to /var/lib/prometheus/node-exporter
 ```
-sudo -u lotus 'if lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.py > /var/lib/prometheus/node-exporter/lotus_get.prom.$$;  then mv /var/lib/prometheus/node-exporter/farcaster.prom.$$ /var/lib/prometheus/node-exporter/farcaster.prom; else rm /var/lib/prometheus/node-exporter/farcaster.prom.$$; fi'
+sudo -u lotus touch /var/lib/prometheus/node-exporter/farcaster.prom
+sudo -u lotus 'if lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.py > /var/lib/prometheus/node-exporter/farcaster.prom.$$;  then mv /var/lib/prometheus/node-exporter/farcaster.prom.$$ /var/lib/prometheus/node-exporter/farcaster.prom; else rm /var/lib/prometheus/node-exporter/farcaster.prom.$$; fi'
 tail -n 100 -f /var/log/syslog
 ```
 * Finally you can connect to the local prometheus-node-exporter and find lotus metrics (search for lotus_daemon_info) : http://HOSTNAME:9100/metrics
+
+All Set you can know automated it with cron
+```
+cp lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.cron /etc/cron.d/lotus-exporter-farcaster
+chmod +x /etc/cron.d/lotus-exporter-farcaster
+```
 
 ## Tested environments
 * Grafana : 7.1.5
