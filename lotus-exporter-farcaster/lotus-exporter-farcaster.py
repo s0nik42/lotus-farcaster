@@ -33,11 +33,12 @@ DAEMON_TOKEN = ""
 #
 # DO NOT EDIT BELOW
 #
-from urllib import request
+import urllib.request
 from urllib.parse import urlparse
 from pathlib import Path
 import json
 import time
+import sys
 
 # Start execution time mesurement
 start_time = time.time()
@@ -61,20 +62,54 @@ def miner_get_json(method, params):
 
 def get_json(url,token,method, params):
     jsondata = json.dumps({ "jsonrpc": "2.0", "method": "Filecoin." + method, "params": params, "id": 3 }).encode("utf8")
-    req = request.Request(url)
+    req = urllib.request.Request(url)
     req.add_header('Authorization', 'Bearer ' + token )
     req.add_header("Content-Type","application/json")
 
-    res = request.urlopen(req, jsondata).read()
-    page = res.decode("utf8")
+    try: 
+        response = urllib.request.urlopen(req, jsondata)
+    except urllib.error.URLError as e:
+        print(f'ERROR accessing { url } : { e.reason }', file=sys.stderr)
+        print('test_lotus_succeed{ } 0')
+        exit(1)
 
-    # parse json object
-    obj = json.loads(page)
+    try: 
+        res = response.read()
+        page = res.decode("utf8")
+
+        # parse json object
+        obj = json.loads(page)
+    except Exception as e:
+        print(f'ERROR parsing URL response : { e }\nDEBUG: { page } ', file=sys.stderr)
+        print('test_lotus_succeed{ } 0')
+        exit(1)
+
+    # Check if the answer contain results
+    if ("result" not in obj.keys()):
+        print(f'ERROR { url } returned no result : \nDEBUG : { obj }', file=sys.stderr)
+        print('test_lotus_succeed{ } 0')
+        exit(1)
 
     # output some object attributes
     return(obj)
 
-# EXECUTION TIME MEASUREMENT FINCTION
+# Count bits from golang Bitfield object. s0nik42 reverse engineering // https://github.com/filecoin-project/go-bitfield/blob/master/rle/rleplus.go#L88
+def bitfield_count(bitfield):
+    count = 0
+    if (len(bitfield) < 2):
+        return 0
+    for i in range(0,len(bitfield),2):
+        count += bitfield[i+1]
+    return count
+
+# Include lotus succeed headers
+print("# HELP test_lotus_execution_succeed return 1 if lotus-farcaster execution was successfully")
+print("# TYPE test_lotus_execution_succeed gauge")
+print("# HELP test_lotus_execution_local_time time on the node machine when last execution start in epoch")
+print("# TYPE test_lotus_execution_local_time gauge")
+print(f'test_lotus_execution_local_time{{ }} { int(time.time()) }')
+
+# EXECUTION TIME MEASUREMENT FUNCTION
 collector_start_time = False
 def checkpoint(collector_name):
     global collector_start_time
@@ -92,6 +127,8 @@ miner_id = actoraddress['result']
 # RETRIEVE TIPSET + CHAINHEAD
 chainhead = daemon_get_json("ChainHead", [])
 tipsetkey = chainhead["result"]["Cids"]
+# XXX small hack trying to speedup the script
+empty_tipsetkey = []
 print("# HELP test_lotus_daemon_height return current height")
 print("# TYPE test_lotus_daemon_height counter")
 print(f'test_lotus_daemon_height {{ miner_id="{miner_id}" }} {chainhead["result"]["Height"]}')
@@ -113,25 +150,29 @@ miner_version = miner_get_json("Version", [])
 checkpoint("Miner")
 
 # RETRIEVE MAIN ADDRESSES
-daemon_stats = daemon_get_json("StateMinerInfo",[miner_id,tipsetkey])
+daemon_stats = daemon_get_json("StateMinerInfo",[miner_id,empty_tipsetkey])
 miner_owner = daemon_stats["result"]["Owner"]
 miner_worker = daemon_stats["result"]["Worker"]
 miner_control0 = daemon_stats["result"]["ControlAddresses"][0]
-miner_owner_addr = daemon_get_json("StateAccountKey",[miner_owner,tipsetkey])["result"]
-miner_worker_addr = daemon_get_json("StateAccountKey",[miner_worker,tipsetkey])["result"]
-miner_control0_addr = daemon_get_json("StateAccountKey",[miner_control0,tipsetkey])["result"]
+miner_owner_addr = daemon_get_json("StateAccountKey",[miner_owner,empty_tipsetkey])["result"]
+miner_worker_addr = daemon_get_json("StateAccountKey",[miner_worker,empty_tipsetkey])["result"]
+miner_control0_addr = daemon_get_json("StateAccountKey",[miner_control0,empty_tipsetkey])["result"]
 
 print("# HELP test_lotus_miner_info lotus miner information like adress version etc")
 print("# TYPE test_lotus_miner_info gauge")
+print("# HELP test_lotus_miner_info_sector_size lotus miner sector size")
+print("# TYPE test_lotus_miner_info_sector_size gauge")
 print(f'test_lotus_miner_info {{ miner_id = "{miner_id}", version="{ miner_version["result"]["Version"] }", owner="{ miner_owner }", owner_addr="{ miner_owner_addr }", worker="{ miner_worker }", worker_addr="{ miner_worker_addr }", control0="{ miner_control0 }", control0_addr="{ miner_control0_addr }" }} 1' )
+print(f'test_lotus_miner_info_sector_size {{ miner_id = "{miner_id}" }} { daemon_stats["result"]["SectorSize"] }' )
 checkpoint("StateMinerInfo")
 
 # GENERATE DAEMON INFO
 daemon_network = daemon_get_json("StateNetworkName",[])
+daemon_network_version = daemon_get_json("StateNetworkVersion",[empty_tipsetkey])
 daemon_version= daemon_get_json("Version", [])
-print("# HELP test_lotus_daemon_info lotus daemon information like adress version etc")
+print("# HELP test_lotus_daemon_info lotus daemon information like adress version, value is set to network version number")
 print("# TYPE test_lotus_daemon_info gauge")
-print(f'test_lotus_daemon_info {{ miner_id = "{miner_id}", version="{ daemon_version["result"]["Version"] }", network="{ daemon_network["result"] }"}} 1' )
+print(f'test_lotus_daemon_info {{ miner_id = "{miner_id}", version="{ daemon_version["result"]["Version"] }", network="{ daemon_network["result"] }"}} { daemon_network_version["result"]}')
 checkpoint("Daemon")
 
 # GENERATE WALLET + LOCKED FUNDS BALANCES
@@ -144,11 +185,11 @@ for (addr) in walletlist["result"]:
     print(f'test_lotus_wallet_balance {{ miner_id="{miner_id}", address="{ addr }", short="{ short }" }} { int(balance["result"])/1000000000000000000 }')
 
 # Add miner balance :
-miner_balance_available = daemon_get_json("StateMinerAvailableBalance",[miner_id,tipsetkey])
+miner_balance_available = daemon_get_json("StateMinerAvailableBalance",[miner_id,empty_tipsetkey])
 print(f'test_lotus_wallet_balance {{ miner_id="{miner_id}", address="{ miner_id }", short="{ miner_id }" }} { int(miner_balance_available["result"])/1000000000000000000 }')
 
 # Retrieve locked funds balance
-locked_funds = daemon_get_json("StateReadState",[miner_id,tipsetkey])
+locked_funds = daemon_get_json("StateReadState",[miner_id,empty_tipsetkey])
 print("# HELP test_lotus_wallet_locked_balance return miner wallet locked funds")
 print("# TYPE test_lotus_wallet_locked_balance gauge")
 for i in ["PreCommitDeposits", "LockedFunds", "FeeDebt", "InitialPledge"]:
@@ -156,8 +197,7 @@ for i in ["PreCommitDeposits", "LockedFunds", "FeeDebt", "InitialPledge"]:
 checkpoint("Balances")
 
 # GENERATE POWER
-# XXX ADD COMMITTED POWER
-powerlist = daemon_get_json("StateMinerPower",[miner_id, tipsetkey])
+powerlist = daemon_get_json("StateMinerPower",[miner_id, empty_tipsetkey])
 print("# HELP test_lotus_power return miner power")
 print("# TYPE test_lotus_power gauge")
 for (minerpower) in powerlist["result"]["MinerPower"]:
@@ -177,7 +217,7 @@ print(f'test_lotus_power_mining_eligibility {{ miner_id="{miner_id}" }} { eligib
 checkpoint("Power")
 
 # GENERATE MPOOL 
-mpoolpending = daemon_get_json("MpoolPending",[tipsetkey])
+mpoolpending = daemon_get_json("MpoolPending",[empty_tipsetkey])
 print("# HELP test_lotus_mpool_total return number of message pending in mpool")
 print("# TYPE test_lotus_mpool_total gauge")
 print("# HELP test_lotus_mpool_local_total return total number in mpool comming from local adresses")
@@ -310,7 +350,7 @@ for (wrk, job_list) in workerjobs["result"].items():
         start=str(job['Start'])
         runwait=str(job['RunWait'])
         job_start_time=time.mktime(time.strptime(start.split('.')[0], '%Y-%m-%dT%H:%M:%S'))
-        print(f'test_lotus_miner_worker_job {{ miner_id="{miner_id}", job_id="{jobid}", worker="{worker}", task="{task}", sector="{sector}", start="{start}", runwait="{runwait}" }} { start_time - job_start_time }')
+        print(f'test_lotus_miner_worker_job {{ miner_id="{miner_id}", job_id="{jobid}", worker="{worker}", task="{task}", sector_id="{sector}", start="{start}", runwait="{runwait}" }} { start_time - job_start_time }')
 checkpoint("Jobs")
 
 # GENERATE JOB SCHEDDIAG
@@ -322,20 +362,41 @@ for (sched, req_list) in scheddiag["result"].items():
             sector=req["Sector"]["Number"]
             task=req["TaskType"]
             priority=req["Priority"]
-            print(f'test_lotus_miner_worker_job {{ miner_id="{miner_id}", job_id="", worker="", task="{task}", sector="{sector}", start="", runwait="99" }} 0')
+            print(f'test_lotus_miner_worker_job {{ miner_id="{miner_id}", job_id="", worker="", task="{task}", sector_id="{sector}", start="", runwait="99" }} 0')
 checkpoint("SchedDiag")
 
 # GENERATE SECTORS
 print("# HELP test_lotus_miner_sector_state sector state")
 print("# TYPE test_lotus_miner_sector_state gauge")
+print("# HELP test_lotus_miner_sector_date contains important date of the sector life")
+print("# TYPE test_lotus_miner_sector_date gauge")
+
 sector_list = miner_get_json("SectorsList",[])
 #sectors_counters = {}
 # remove duplicate (bug)
 unique_sector_list = set(sector_list["result"])
 for sector in unique_sector_list:
     detail = miner_get_json("SectorsStatus", [sector, False])
-    print(f'test_lotus_miner_sector_state {{ miner_id="{miner_id}", sector_id="{ sector }", state="{ detail["result"]["State"] }" }} 1')
-checkpoint("Sectors")
+    deals = len(detail["result"]["Deals"])-detail["result"]["Deals"].count(0)
+    creation_date  = detail["result"]["Log"][0]["Timestamp"]
+    packed_date ="" 
+    finalized_date = ""
+    for log in range(len(detail["result"]["Log"])):
+        if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorPacked":
+            packed_date = detail["result"]["Log"][log]["Timestamp"]
+        if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorFinalized":
+            finalized_date = detail["result"]["Log"][log]["Timestamp"]
+    if (detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC"):
+        pledged = 1
+    else:
+        pledged = 0
+    print(f'test_lotus_miner_sector_state {{ miner_id="{miner_id}", sector_id="{ sector }", state="{ detail["result"]["State"] }", pledged="{ pledged }", deals="{ deals }" }} 1')
+    if packed_date != "":
+        print(f'test_lotus_miner_sector_date {{ miner_id="{miner_id}", sector_id="{ sector }", date_type="packed" }} { packed_date }')
+    if creation_date != "":
+        print(f'test_lotus_miner_sector_date {{ miner_id="{miner_id}", sector_id="{ sector }", date_type="creation" }} { creation_date }')
+    if finalized_date != "":
+        print(f'test_lotus_miner_sector_date {{ miner_id="{miner_id}", sector_id="{ sector }", date_type="finalized" }} { finalized_date }')
 
 # GENERATE STORAGE INFO
 print("# HELP test_lotus_miner_storage_info get storage info state")
@@ -371,18 +432,91 @@ for storage in storage_list["result"].keys():
     print(f'test_lotus_miner_storage_reserved {{ miner_id="{miner_id}", storage_id="{ storage_id }" }} { storage_reserved }')
 checkpoint("Storage")
 
+# GENERATE DEADLINES 
+proven_partitions   = daemon_get_json("StateMinerDeadlines",[miner_id,empty_tipsetkey])
+deadlines           = daemon_get_json("StateMinerProvingDeadline",[miner_id,empty_tipsetkey])
+dl_epoch            = deadlines["result"]["CurrentEpoch"]
+dl_index            = deadlines["result"]["Index"]
+dl_open             = deadlines["result"]["Open"]
+dl_numbers          = deadlines["result"]["WPoStPeriodDeadlines"]
+dl_window           = deadlines["result"]["WPoStChallengeWindow"] 
+print("# HELP test_lotus_miner_deadline_info deadlines and WPoSt informations")
+print("# TYPE test_lotus_miner_deadline_info gauge")
+print(f'test_lotus_miner_deadline_info {{ miner_id="{miner_id}", current_idx="{ dl_index }", current_epoch="{ dl_epoch }",current_open_epoch="{ dl_open }", wpost_period_deadlines="{ dl_numbers }", wpost_challenge_window="{ dl_window }" }} 1')
+print("# HELP test_lotus_miner_deadline_active_start remaining time before deadline start")
+print("# TYPE test_lotus_miner_deadline_active_start gauge")
+print("# HELP test_lotus_miner_deadline_active_sectors_all number of sectors in the deadline")
+print("# TYPE test_lotus_miner_deadline_active_sectors_all gauge")
+print("# HELP test_lotus_miner_deadline_active_sectors_recovering number of sectors in recovering state")
+print("# TYPE test_lotus_miner_deadline_active_sectors_recovering gauge")
+print("# HELP test_lotus_miner_deadline_active_sectors_faulty number of faulty sectors")
+print("# TYPE test_lotus_miner_deadline_active_sectors_faulty gauge")
+print("# HELP test_lotus_miner_deadline_active_sectors_live number of live sectors")
+print("# TYPE test_lotus_miner_deadline_active_sectors_live gauge")
+print("# HELP test_lotus_miner_deadline_active_sectors_active number of active sectors")
+print("# TYPE test_lotus_miner_deadline_active_sectors_active gauge")
+print("# HELP test_lotus_miner_deadline_active_partitions number of partitions in the deadline")
+print("# TYPE test_lotus_miner_deadline_active_partitions gauge")
+print("# HELP test_lotus_miner_deadline_active_partitions_proven number of partitions already proven for the deadline")
+print("# TYPE test_lotus_miner_deadline_active_partitions_proven gauge")
+for c in range(dl_numbers):
+    idx    = (dl_index + c) % dl_numbers
+    opened = dl_open + dl_window * c
+    partitions = daemon_get_json("StateMinerPartitions",[miner_id,idx,empty_tipsetkey])
+    if partitions["result"]:
+        faulty = 0
+        recovering = 0
+        alls = 0
+        active = 0
+        live = 0
+        count  = len(partitions["result"])
+        proven = bitfield_count(proven_partitions["result"][idx]["PostSubmissions"])
+        for partition in partitions["result"]:
+            faulty     += bitfield_count(partition["FaultySectors"])
+            recovering += bitfield_count(partition["RecoveringSectors"])
+            active += bitfield_count(partition["ActiveSectors"])
+            live += bitfield_count(partition["LiveSectors"])
+            alls = bitfield_count(partition["AllSectors"])
+        print(f'test_lotus_miner_deadline_active_start {{ miner_id="{miner_id}", index="{ idx }"}} { (opened - dl_epoch) * 30  }')
+        print(f'test_lotus_miner_deadline_active_partitions_proven {{ miner_id="{miner_id}", index="{ idx }"}} { proven }')
+        print(f'test_lotus_miner_deadline_active_partitions {{ miner_id="{miner_id}", index="{ idx }"}} { count }')
+        print(f'test_lotus_miner_deadline_active_sectors_all {{ miner_id="{miner_id}", index="{ idx }"}} { alls  }')
+        print(f'test_lotus_miner_deadline_active_sectors_recovering {{ miner_id="{miner_id}", index="{ idx }"}} { recovering }')
+        print(f'test_lotus_miner_deadline_active_sectors_faulty {{ miner_id="{miner_id}", index="{ idx }"}} { faulty }')
+        print(f'test_lotus_miner_deadline_active_sectors_active {{ miner_id="{miner_id}", index="{ idx }"}} { active }')
+        print(f'test_lotus_miner_deadline_active_sectors_live {{ miner_id="{miner_id}", index="{ idx }"}} { live }')
+checkpoint("Deadlines")
+
+
 # GENERATE SCRAPE TIME
 print(f'test_lotus_miner_scrape_duration_seconds {{ collector="All" }} {time.time() - start_time}')
+print('test_lotus_succeed{ } 1')
+
 # XXX TODO
-# XXX CAlculate Block win rate mining/every ...
-# print(daemon_get_json("StateMinerProvingDeadline",[miner_id,tipsetkey]))
-# XXX rajouter les errors de sectors et de deadlines
-#print(daemon_get_json("StateMinerFaults",[miner_id,tipsetkey]))
+# GENERATE STORAGE MARKET
+#print(miner_get_json("MarketGetAsk",[]))
+#print(miner_get_json("DealsConsiderOnlineStorageDeals",[]))
+#print(miner_get_json("DealsConsiderOfflineStorageDeals",[]))
+#print(miner_get_json("DealsConsiderOnlineRetrievalDeals",[]))
+#print(miner_get_json("DealsConsiderOfflineRetrievalDeals",[]))
+#print(miner_get_json("SectorGetSealDelay",[]))
+#print(miner_get_json("MarketListDeals",[]))
+
+# GENERATE RETRIEVAL MARKET
+#print(miner_get_json("MarketGetRetrievalAsk",[]))
+#print(miner_get_json("MarketListRetrievalDeals",[]))
+
+# GENERATE DATA TRANSFERS
+#print(miner_get_json("MarketListDataTransfers",[]))
+
+# XXX rajouter les errors de sectors 
+#print(daemon_get_json("StateMinerFaults",[miner_id,empty_tipsetkey]))
 # GAs price
-#print(daemon_get_json("StateMinerSectorCount",[miner_id,tipsetkey]))
-# {'jsonrpc': '2.0', 'result': {'Live': 624, 'Active': 594, 'Faulty': 0}, 'id': 3}
-# SectorsList :: List of sectors without info
 # XXX Display SectorGetSealDelay / XXX Display sealing Sectors and details
 # Winning blocks 
 # WaitDeal (list of deals/ Since / SealWaitingTime)
-# XXX get-ask // Assek deals
+# XXX LA PoST n'impact pas l'etat les ressources des MAchines voir pour changer ca
+# Gerer une metrics : service UP/DOWN
+# XXX TROUVER LA LISTE DES FAULTY SECTORS 
+# XXX A quoi correcpond le champs retry dans le SectorStatus
+# If a worker is not available. An error stop the script (Storage Result) To be solved
