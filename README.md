@@ -1,5 +1,6 @@
 ![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/screenshots/screenshot001.png)
 
+
 # lotus-farcaster 
 is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node. Developped in cooperation with Protocol Labs. 
 It leverages [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/) and Python.
@@ -9,6 +10,10 @@ It leverages [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com
 * This is an individual open source project, not backed by any companies. If you like it please consider contributing by reaching me out or donate. 
 
 Thank you !
+
+## Version 
+
+This is a BETA PUBLIC VERSION. It cannot break your lotus installation, but you may face bugs or inaccurate information. Please consider giving feedbacks by opening issues.
 
 ## How it works
 lotus farcaster comes with 2 Components :
