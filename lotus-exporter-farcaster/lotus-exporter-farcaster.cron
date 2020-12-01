@@ -1,3 +1,3 @@
 # EXPORT LOTUS TO NODE-EXPOTER / PROMETHEUS
-* * * * *   lotus if /usr/local/bin/lotus-exporter-farcaster.py > /var/lib/prometheus/node-exporter/farcaster.prom.$$;  then mv /var/lib/prometheus/node-exporter/farcaster.prom.$$ /var/lib/prometheus/node-exporter/farcaster.prom; else rm /var/lib/prometheus/node-exporter/farcaster.prom.$$; fi 
+* * * * *   LOTUS_USER if /usr/local/bin/lotus-exporter-farcaster.py > /var/lib/prometheus/node-exporter/farcaster.prom.$$;  then mv /var/lib/prometheus/node-exporter/farcaster.prom.$$ /var/lib/prometheus/node-exporter/farcaster.prom; else rm /var/lib/prometheus/node-exporter/farcaster.prom.$$; fi 
 

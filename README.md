@@ -1,8 +1,14 @@
 ![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/screenshots/screenshot001.png)
 
 # lotus-farcaster 
-is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node
+is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node. Developped in cooperation with Protocol Labs. 
 It leverages [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/) and Python.
+
+## Contribution
+* Donation Filcoin Address : f3v3lj5jrsvv3nwmsvvj57yyty6ndb27oyi4yaqhwzst3emdv25hefna6vxhtpjb5pytwahdod67syxjyzba3q
+* This is an individual open source project, not backed by any companies. If you like it please consider contributing by reaching me out or donate. 
+
+Thank you !
 
 ## How it works
 lotus farcaster comes with 2 Components :
@@ -31,53 +37,37 @@ It generates metrics that are exposed by node-exporter to prometheus.
 |Power        | OK          |                   |
 |Wallets      | OK          |                   |
 |Chain        | OK          |Head + Sync Status |
-|Deals        | OK          |                   |
-|Deadlines    | Comming Soon|                   |
+|Deadlines    | OK          |                   |
+|Deals        | Partial     |                   |
 |Gas Price    | Comming Soon|                   |
 |Won Blocks   | Roadmap     |                   |
 
 ## Requirements
 * A Grafana/Prometheus working environment (local or remote)
-* Locally installed on the miner :
+  * [Grafana installation guide](https://grafana.com/docs/grafana/latest/installation/debian/)  (Version 7.3.1)
+  * Prometheus is available as package in ubuntu 20.04 (Version 2.20.1)
+
+* Locally installed on the miner node only:
   * prometheus-node-exporter
+  * python3-toml
   * lotus-exporter-farcaster
 
 ## Instalation of lotus-exporter-farcaster (Ubuntu)
 ```
-cd /usr/src
 git clone https://github.com/s0nik42/lotus-farcaster.git
-cp lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.py /usr/local/bin
-chmod +x /usr/local/bin/lotus-exporter-farcaster.py
-```
-### First execution (assuming usernmane is "lotus")
-If the script is executed with the same user than lotus miner and lotus node. its configuration less.
-If you execute the sript with another user. A few set of variables are available editing at the beginning of the script.
-### Testing the script is working fine, the following command should return all the metrics and end up nicely
-```
-sudo -u lotus /usr/local/bin/lotus-exporter-farcaster.py
-```
-### Testing the prometheus-node-exporter integration
-We're assuming here you already have a working prometheus-node-exporter
-* The following line is exporting the metrics to the local prometheus-node-exporter. It should end up nicely and you should look at the they is no error coming from rometheus-node-exporter.
-* You may need to provide lotus user "write access" to /var/lib/prometheus/node-exporter
-```
-sudo -u lotus touch /var/lib/prometheus/node-exporter/farcaster.prom
-sudo -u lotus 'if lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.py > /var/lib/prometheus/node-exporter/farcaster.prom.$$;  then mv /var/lib/prometheus/node-exporter/farcaster.prom.$$ /var/lib/prometheus/node-exporter/farcaster.prom; else rm /var/lib/prometheus/node-exporter/farcaster.prom.$$; fi'
-tail -n 100 -f /var/log/syslog
-```
-* Finally you can connect to the local prometheus-node-exporter and find lotus metrics (search for lotus_daemon_info) : http://HOSTNAME:9100/metrics
-
-All Set you can know automated it with cron
-```
-cp lotus-farcaster/lotus-exporter-farcaster/lotus-exporter-farcaster.cron /etc/cron.d/lotus-exporter-farcaster
+cd lotus-farcaster/lotus-exporter-farcaster
+chmox +x install.sh
+./install.sh LOTUS_USERNAME
 ```
 
 ## Instalation of the Grafana Dashboard 
-Import in Grafana the relevent dashboard file from the grafana-dashboard folder 
+Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-dashboard
 
 ## Tested environments
-* Grafana : 7.1.5
+* Grafana : 7.3.1
 * Prometheus : 2.20.1
 * Ubuntu : 20.04.1 LT
 * Python : 3.8
 
+## Contact
+* Slack : @s0nik42
