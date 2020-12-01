@@ -1,4 +1,4 @@
-![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/screenshots/screenshot001.png)
+![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/images/screenshots/screenshot001.png)
 
 
 # lotus-farcaster 
@@ -76,3 +76,6 @@ Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-das
 
 ## Contact
 * Slack : @s0nik42
+
+## Sponsors
+![PROTOCOL_LABS](https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png)
