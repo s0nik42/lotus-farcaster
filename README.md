@@ -78,5 +78,5 @@ Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-das
 * Slack : @s0nik42
 
 ## Sponsors
-![name](<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png" alt="Protcol Labs" width="250">](http://google.com)
+[![name](https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png)](http://google.com)
 <img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png" alt="Protcol Labs" width="250">
