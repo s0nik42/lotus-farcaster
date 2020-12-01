@@ -79,5 +79,4 @@ Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-das
 
 ## Sponsors
 [<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png" alt="Protcol Labs" width="250">
-](http://google.com)
-<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png" alt="Protcol Labs" width="250">
+](https://protocol.ai/)
