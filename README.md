@@ -57,7 +57,7 @@ It generates metrics that are exposed by node-exporter to prometheus.
   * python3-toml
   * lotus-exporter-farcaster
 
-## Instalation of lotus-exporter-farcaster (Ubuntu)
+## Install lotus-exporter-farcaster (Ubuntu)
 ```
 git clone https://github.com/s0nik42/lotus-farcaster.git
 cd lotus-farcaster/lotus-exporter-farcaster
@@ -65,7 +65,7 @@ chmox +x install.sh
 ./install.sh LOTUS_USERNAME
 ```
 
-## Instalation of the Grafana Dashboard 
+## Install the Grafana Dashboard 
 Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-dashboard
 
 ## Tested environments
