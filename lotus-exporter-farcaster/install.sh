@@ -36,7 +36,7 @@ FARCASTER INSTALLATION COMPLETED
 ********************************************************************************
 
 TESTING : 
-	curl -o - http://localhost:9100/metrics -s |grep "lotus_daemon_info{"
+	curl -s -o - http://localhost:9100/metrics -s |grep "lotus_info"
 
 OUTPUT (something like) :
 lotus_daemon_info{miner_id="f010479",network="mainnet",version="1.1.2+git.d4cdc6d33"} 6
