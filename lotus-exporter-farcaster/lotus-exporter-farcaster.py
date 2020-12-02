@@ -281,7 +281,7 @@ def main():
     print("# TYPE lotus_power_mining_eligibility gauge")
     base_info = daemon_get_json("MinerGetBaseInfo", [miner_id, chainhead["result"]["Height"], tipsetkey])
 
-    if base_info["result"] is not None:
+    if base_info["result"] is None:
         print(f'ERROR MinerGetBaseInfo return no result', file=sys.stderr)
         print(f'KNOWN_REASON your miner reports wrong info to the chain and thats pretty bad (not just for the dashboard)', file=sys.stderr)
         print(f'SOLUTION restart your miner and node', file=sys.stderr)
