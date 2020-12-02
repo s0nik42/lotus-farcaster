@@ -3,20 +3,27 @@
 # pylint: disable=C0301, W0511, W0603, W0703, R0914, R0912, R0915
 """
 @author: s0nik42
-Copyright (C) 2019 Julien NOEL
+Copyright (c) 2020 Julien NOEL (s0nik42)
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+MIT License
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
 
 import urllib.request
@@ -28,12 +35,14 @@ import sys
 import socket
 import toml
 
-VERSION = "v1.2.1"
+VERSION = "v1.2.1-1"
 
 #
 # CONFIG VARIABLES // OPTIONAL THEY ARE NORMALLY AUTODETECTED
 #
+# Example : MINER_URL = "http://127.0.0.1:2345/rpc/v0"
 MINER_URL = ""
+# MINER_TOKEN is the content of the ~/.lotusminer/token file
 MINER_TOKEN = ""
 DAEMON_URL = ""
 DAEMON_TOKEN = ""
@@ -66,6 +75,7 @@ def get_json(url, token, method, params):
         response = urllib.request.urlopen(req, jsondata)
     except urllib.error.URLError as e_url:
         print(f'ERROR accessing { url } : { e_url.reason }', file=sys.stderr)
+        print(f'DEBUG: method { method } / params { params } ', file=sys.stderr)
         print('lotus_scrape_execution_succeed { } 0')
         sys.exit(0)
 
@@ -76,15 +86,17 @@ def get_json(url, token, method, params):
         # parse json object
         obj = json.loads(page)
     except Exception as e_generic:
-        print(f'ERROR parsing URL response : { e_generic }\nDEBUG: { page } ', file=sys.stderr)
-
-        # inform the dashboard execution failed
+        print(f'ERROR parsing URL response : { e_generic }', file=sys.stderr)
+        print(f'DEBUG: method { method } / params { params } ', file=sys.stderr)
+        print(f'DEBUG: { page } ', file=sys.stderr)
         print('lotus_scrape_execution_succeed { } 0')
         sys.exit(0)
 
     # Check if the answer contain results / otherwize quit
     if "result" not in obj.keys():
-        print(f'ERROR { url } returned no result : \nDEBUG : { obj }', file=sys.stderr)
+        print(f'ERROR { url } returned no result', file=sys.stderr)
+        print(f'DEBUG: method { method } / params { params } ', file=sys.stderr)
+        print(f'DEBUG: { obj } ', file=sys.stderr)
 
         # inform the dashboard execution failed
         print('lotus_scrape_execution_succeed { } 0')
@@ -208,10 +220,13 @@ def main():
     # RETRIEVE MAIN ADDRESSES
     daemon_stats = daemon_get_json("StateMinerInfo", [miner_id, empty_tipsetkey])
     miner_owner = daemon_stats["result"]["Owner"]
-    miner_worker = daemon_stats["result"]["Worker"]
-    miner_control0 = daemon_stats["result"]["ControlAddresses"][0]
     miner_owner_addr = daemon_get_json("StateAccountKey", [miner_owner, empty_tipsetkey])["result"]
+    miner_worker = daemon_stats["result"]["Worker"]
     miner_worker_addr = daemon_get_json("StateAccountKey", [miner_worker, empty_tipsetkey])["result"]
+    try:
+        miner_control0 = daemon_stats["result"]["ControlAddresses"][0]
+    except:
+        miner_control0 = miner_worker
     miner_control0_addr = daemon_get_json("StateAccountKey", [miner_control0, empty_tipsetkey])["result"]
 
     print("# HELP lotus_miner_info lotus miner information like adress version etc")
@@ -265,6 +280,14 @@ def main():
     print("# HELP lotus_power_mining_eligibility return miner mining eligibility")
     print("# TYPE lotus_power_mining_eligibility gauge")
     base_info = daemon_get_json("MinerGetBaseInfo", [miner_id, chainhead["result"]["Height"], tipsetkey])
+
+    if base_info["result"] is not None:
+        print(f'ERROR MinerGetBaseInfo return no result', file=sys.stderr)
+        print(f'KNOWN_REASON your miner reports wrong info to the chain and thats pretty bad (not just for the dashboard)', file=sys.stderr)
+        print(f'SOLUTION restart your miner and node', file=sys.stderr)
+        print('lotus_scrape_execution_succeed { } 0')
+        sys.exit(0)
+
     if base_info["result"]["EligibleForMining"]:
         eligibility = 1
     else:
@@ -413,7 +436,7 @@ def main():
                 worker_host = workerstats["result"][wrk]["Info"]["Hostname"]
             except:
                 # sometime WorkerJobs return invalid worker_id like 0000-000000-0000... in that case return unknown
-                worker_host =  "unknown"
+                worker_host = "unknown"
             task = str(job['Task'])
             job_start_time = str(job['Start'])
             run_wait = str(job['RunWait'])
@@ -471,15 +494,26 @@ def main():
         if detail["result"]["State"] not in ["Proving", "Removed"]:
             for deal in detail["result"]["Deals"]:
                 if deal != 0:
-                    deal_info = daemon_get_json("StateMarketStorageDeal", [deal, empty_tipsetkey])
-                    deal_is_verified = deal_info["result"]["Proposal"]["VerifiedDeal"]
-                    deal_size = deal_info["result"]["Proposal"]["PieceSize"]
-                    deal_slash_epoch = deal_info["result"]["State"]["SlashEpoch"]
-                    deal_price_per_epoch = deal_info["result"]["Proposal"]["StoragePricePerEpoch"]
-                    deal_provider_collateral = deal_info["result"]["Proposal"]["ProviderCollateral"]
-                    deal_client_collateral = deal_info["result"]["Proposal"]["ClientCollateral"]
-                    deal_start_epoch = deal_info["result"]["Proposal"]["StartEpoch"]
-                    deal_end_epoch = deal_info["result"]["Proposal"]["EndEpoch"]
+                    try:
+                        deal_info = daemon_get_json("StateMarketStorageDeal", [deal, empty_tipsetkey])
+                    except:
+                        deal_is_verified = "unknown"
+                        deal_size = "unknown"
+                        deal_slash_epoch = "unknown"
+                        deal_price_per_epoch = "unknown"
+                        deal_provider_collateral = "unknown"
+                        deal_client_collateral = "unknown"
+                        deal_start_epoch = "unknown"
+                        deal_end_epoch = "unknown"
+                    else:
+                        deal_is_verified = deal_info["result"]["Proposal"]["VerifiedDeal"]
+                        deal_size = deal_info["result"]["Proposal"]["PieceSize"]
+                        deal_slash_epoch = deal_info["result"]["State"]["SlashEpoch"]
+                        deal_price_per_epoch = deal_info["result"]["Proposal"]["StoragePricePerEpoch"]
+                        deal_provider_collateral = deal_info["result"]["Proposal"]["ProviderCollateral"]
+                        deal_client_collateral = deal_info["result"]["Proposal"]["ClientCollateral"]
+                        deal_start_epoch = deal_info["result"]["Proposal"]["StartEpoch"]
+                        deal_end_epoch = deal_info["result"]["Proposal"]["EndEpoch"]
                     print(f'lotus_miner_sector_sealing_deals_size {{ miner_id="{miner_id}", sector_id="{ sector }", deal_id="{ deal }", deal_is_verified="{ deal_is_verified }", deal_slash_epoch="{ deal_slash_epoch }", deal_price_per_epoch="{ deal_price_per_epoch }",deal_provider_collateral="{ deal_provider_collateral }", deal_client_collateral="{ deal_client_collateral }", deal_size="{ deal_size }", deal_start_epoch="{ deal_start_epoch }", deal_end_epoch="{ deal_end_epoch }" }} 1')
 
     # GENERATE DEADLINES
