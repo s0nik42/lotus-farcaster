@@ -585,7 +585,6 @@ def main():
     storage_local_list = miner_get_json("StorageLocal", [])
     for storage in storage_list["result"].keys():
         storage_info = miner_get_json("StorageInfo", [storage])
-        storage_stat = miner_get_json("StorageStat", [storage])
         if storage in storage_local_list["result"].keys():
             storage_path = storage_local_list["result"][storage]
         else:
@@ -602,9 +601,16 @@ def main():
         storage_weight = storage_info["result"]["Weight"]
         storage_can_seal = storage_info["result"]["CanSeal"]
         storage_can_store = storage_info["result"]["CanStore"]
-        storage_capacity = storage_stat["result"]["Capacity"]
-        storage_available = storage_stat["result"]["Available"]
-        storage_reserved = storage_stat["result"]["Reserved"]
+        try:
+            storage_stat = miner_get_json("StorageStat", [storage])
+        except:
+            storage_capacity = 0
+            storage_available = 0
+            storage_reserved = 0
+        else:
+            storage_capacity = storage_stat["result"]["Capacity"]
+            storage_available = storage_stat["result"]["Available"]
+            storage_reserved = storage_stat["result"]["Reserved"]
         print(f'lotus_miner_storage_info {{ miner_id="{miner_id}", storage_id="{ storage_id }", storage_url="{ storage_info["result"]["URLs"][0] }", storage_host_name="{ storate_host_name }", storage_host_ip="{ storage_host_ip }", storage_host_port="{ storage_host_port }", weight="{ storage_weight }", can_seal="{ storage_can_seal }", can_store="{ storage_can_store }", path="{ storage_path }" }} 1')
         print(f'lotus_miner_storage_capacity {{ miner_id="{miner_id}", storage_id="{ storage_id }" }} { storage_capacity }')
         print(f'lotus_miner_storage_available {{ miner_id="{miner_id}", storage_id="{ storage_id }" }} { storage_available }')
