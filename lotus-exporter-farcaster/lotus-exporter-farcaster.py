@@ -440,7 +440,7 @@ def main():
             task = str(job['Task'])
             job_start_time = str(job['Start'])
             run_wait = str(job['RunWait'])
-            job_start_epoch = time.mktime(time.strptime(job_start_time.split('.')[0], '%Y-%m-%dT%H:%M:%S'))
+            job_start_epoch = time.mktime(time.strptime(job_start_time[:19], '%Y-%m-%dT%H:%M:%S'))
             print(f'lotus_miner_worker_job {{ miner_id="{miner_id}", job_id="{job_id}", worker_host="{ worker_host }", task="{task}", sector_id="{sector}", job_start_time="{job_start_time}", run_wait="{run_wait}" }} { START_TIME - job_start_epoch }')
     checkpoint("Jobs")
 
