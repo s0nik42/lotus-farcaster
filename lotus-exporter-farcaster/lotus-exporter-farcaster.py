@@ -651,6 +651,8 @@ def main():
 
 # XXX Review Schediag // Structure completely changed
 # XXX Parse version : https://stackoverflow.com/questions/11887762/how-do-i-compare-version-numbers-in-python
+# XXX Include Verified Deals in the Committed PowerCalculation
+# XXX Gerer le bug lier à l'absence de Worker (champs GPU vide, etc...)
 if __name__ == "__main__":
     # execute only if run as a script
     main()
