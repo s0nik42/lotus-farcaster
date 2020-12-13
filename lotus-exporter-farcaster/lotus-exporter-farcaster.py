@@ -33,7 +33,6 @@ import json
 import time
 import sys
 import socket
-import toml
 
 VERSION = "v1.2.1-1"
 
@@ -143,26 +142,18 @@ def main():
 
     # SET API IP PORT AND AUTH
     if MINER_URL == '':
-        miner_config = toml.load(str(Path.home()) + "/.lotusminer/config.toml")
-        miner_api_ip = "127.0.0.1"
-        miner_api_port = "2345"
-        # try to read configuration file to identify miner url
-        if "API" in miner_config.keys():
-            if "ListenAddress" in miner_config["API"].keys():
-                miner_api = miner_config["API"]["ListenAddress"].split("/")
-                miner_api_ip = miner_api[2].replace("0.0.0.0", "127.0.0.1")
-                miner_api_port = miner_api[4]
+        with open(str(Path.home()) + "/.lotusminer/api", "r") as text_file:
+            miner_api_line = text_file.read()
+        miner_api = miner_api_line.split("/")
+        miner_api_ip = miner_api[2]
+        miner_api_port = miner_api[4]
         MINER_URL = "http://" + miner_api_ip + ":" + miner_api_port + "/rpc/v0"
     if DAEMON_URL == '':
-        daemon_config = toml.load(str(Path.home()) + "/.lotus/config.toml")
-        daemon_api_ip = "127.0.0.1"
-        daemon_api_port = "1234"
-        # try to read configuration file to identify daemon url
-        if "API" in daemon_config.keys():
-            if "ListenAddress" in daemon_config["API"].keys():
-                daemon_api = daemon_config["API"]["ListenAddress"].split("/")
-                daemon_api_ip = daemon_api[2].replace("0.0.0.0", "127.0.0.1")
-                daemon_api_port = daemon_api[4]
+        with open(str(Path.home()) + "/.lotus/api", "r") as text_file:
+            daemon_api_line = text_file.read()
+        daemon_api = daemon_api_line.split("/")
+        daemon_api_ip = daemon_api[2]
+        daemon_api_port = daemon_api[4]
         DAEMON_URL = "http://" + daemon_api_ip + ":" + daemon_api_port + "/rpc/v0"
 
     if MINER_TOKEN == '':
