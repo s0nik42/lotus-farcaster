@@ -1,0 +1,11 @@
+# left by validing with python -m py_compile
+lotus-exporter-farcaster/__pycache__/
+
+# Vim
+*.swp
+
+# OS X
+.DS_Store
+
+# exported containers
+/*.tar
