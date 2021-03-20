@@ -76,34 +76,53 @@ Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-das
 
 ## Docker
 
-This can be run as a Docker container in conjunction with a prometheus
-node exporter container. Start by following the
-[instructions](https://github.com/prometheus/node_exporter) to get the
-node_exporter container going. The container that corresponds to this
+This can be run as a Docker container. The container that corresponds to this
 repository will run the `docker_run_script.sh` script which just loops
-over calling lotus-farcaster code and sleeping for 10 seconds. The
-output of the lotus-farcaster is written to `/data/lotus-farcaster.prom`
-inside the container which should be a bind mount to somewhere on the
-host filesystem.
+over calling lotus-farcaster code at a specific frequency (default: every minute)
+This can be overriden by editing the Dockerfile. In case execution exceed the set requency,
+the execution restart after 10 seconds.
+The output of the lotus-farcaster is written to `/data/farcaster.prom`
+inside the container which should be a bind mount in prometheus node exporter path.
 
+Optional : This could be use in conjunction with a dockerised version of prometheus 
+node_exporter ([instructions](https://github.com/prometheus/node_exporter) to get the
+node_exporter container going
 
-### Building the container
+### Building the container (as root)
+```
+apt install docker.io
+docker build -t lotus-farcaster:latest -f dockerfiles/Dockerfile .
+```
 
-`docker build -t lotus-farcaster:latest .`
-
-### Running the container
-
-The source directory below should be created on the host. This will
-mount that directory to `/data` inside the container which is where the
-output of the `lotus-farcaster.py` is stored. Change `<LOTUS_PATH>` to
-match your `$LOTUS_PATH` and the same for `<LOTUS_MINER_PATH>`.
+### Running the container (as root)
+Set the 3 variables below (LOTUS_PATH, LOTUS_MINER_PATH, PROMETHEUS_NODE_EXPORTER_PATH),
+accordingly to your setup and simply copy paste the run command below.
 
 ```
+export LOTUS_PATH="/opt/lotus/.lotus/"
+export LOTUS_MINER_PATH="/opt/lotus/.lotusminer/"
+export PROMETHEUS_NODE_EXPORTER_PATH="/var/lib/prometheus/node-exporter/"
+
 docker run --name lotus-farcaster -d \
-  --mount type=bind,source=<LOTUS_PATH>,target=/root/.lotus \
-  --mount type=bind,source=<LOTUS_MINER_PATH>,target=/root/.lotusminer \
-  --mount type=bind,source=/opt/prometheus/exported_data,target=/data \
+  --mount type=bind,source=$LOTUS_PATH,target=/root/.lotus,readonly \
+  --mount type=bind,source=$LOTUS_MINER_PATH,target=/root/.lotusminer,readonly \
+  --mount type=bind,source=$PROMETHEUS_NODE_EXPORTER_PATH,target=/data \
+  --network=host \
   lotus-farcaster
+```
+
+### Docker Debug (as root)
+```
+docker ps [-a]
+docker logs lotus-farcaster
+docker exec -it lotus-farcaster bash 
+```
+
+### Uninstall docker (as root)
+```
+docker stop lotus-farcaster
+docker rm lotus-farcaster
+docker image rm lotus-farcaster
 ```
 
 ## Contact
