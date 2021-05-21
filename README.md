@@ -1,19 +1,14 @@
 ![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/images/screenshots/screenshot001.png)
 
-
-# lotus-farcaster
-is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node. Developped in cooperation with Protocol Labs.
+# lotus-farcaster 
+is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node. It provides advance analytics features (Like average sealing time, historical). Its designed to replace your terminal monitoring. Farcaster is developped in cooperation with Protocol Labs. 
 It leverages [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/) and Python.
 
 ## Contribution
 * Donation Filcoin Address : f3v3lj5jrsvv3nwmsvvj57yyty6ndb27oyi4yaqhwzst3emdv25hefna6vxhtpjb5pytwahdod67syxjyzba3q
-* This is an individual open source project, not backed by any companies. If you like it please consider contributing by reaching me out or donate.
+* This is an individual open source project, not backed by any companies. If you like it please consider contributing by reaching me out or donate. 
 
 Thank you !
-
-## Version
-
-This is a BETA PUBLIC VERSION. It cannot break your lotus installation, but you may face bugs or inaccurate information. Please consider giving feedbacks by opening issues.
 
 ## How it works
 lotus farcaster comes with 2 Components :
@@ -44,17 +39,20 @@ It generates metrics that are exposed by node-exporter to prometheus.
 |Chain        | OK          |Head + Sync Status |
 |Deadlines    | OK          |                   |
 |Deals        | Partial     |                   |
-|Gas Price    | Comming Soon|                   |
-|Won Blocks   | Roadmap     |                   |
+|Fil+         | OK          | Visualize granted datacap|
+|Adress lookup| OK          | View names instead of boring adresses |
+|Deals        | Partial     | Sealing Deals     |
 
 ## Requirements
 * A Grafana/Prometheus working environment (local or remote)
-  * [Grafana installation guide](https://grafana.com/docs/grafana/latest/installation/debian/)  (Version 7.3.1)
+  * [Grafana installation guide](https://grafana.com/docs/grafana/latest/installation/debian/)  (Version 7.4.0)
   * Prometheus is available as package in ubuntu 20.04 (Version 2.20.1)
 
 * Locally installed on the miner node only:
   * prometheus-node-exporter
   * python3-toml
+  * python3-aiohttp
+  * py-multibase
   * lotus-exporter-farcaster
 
 ## Install lotus-exporter-farcaster (Ubuntu)
@@ -65,18 +63,18 @@ chmod +x install.sh
 ./install.sh LOTUS_USER_USERNAME
 ```
 
-## Install the Grafana Dashboard
+## Install the Grafana Dashboard 
 Import in Grafana the relevent dashboard file from ./lotus-farcaster/grafana-dashboard
 
 ## Tested environments
-* Grafana : 7.3.1
+* Grafana : 7.4.0
 * Prometheus : 2.20.1
 * Ubuntu : 20.04.1 LT
 * Python : 3.8
 
 ## Docker
 
-This can be run as a Docker container. The container that corresponds to this
+Farcaster can also run as a Docker container. The container that corresponds to this
 repository will run the `docker_run_script.sh` script which just loops
 over calling lotus-farcaster code at a specific frequency (default: every minute)
 This can be overriden by editing the Dockerfile. In case execution exceed the set requency,
@@ -101,11 +99,13 @@ accordingly to your setup and simply copy paste the run command below.
 ```
 export LOTUS_PATH="/opt/lotus/.lotus/"
 export LOTUS_MINER_PATH="/opt/lotus/.lotusminer/"
+export LOTUS_FARCASTER_PATH="/opt/lotus/.lotus-exporter-farcaster/"
 export PROMETHEUS_NODE_EXPORTER_PATH="/var/lib/prometheus/node-exporter/"
 
 docker run --name lotus-farcaster -d \
   --mount type=bind,source=$LOTUS_PATH,target=/root/.lotus,readonly \
   --mount type=bind,source=$LOTUS_MINER_PATH,target=/root/.lotusminer,readonly \
+  --mount type=bind,source=$LOTUS_FARCASTER_PATH,target=/root/.lotus-exporter-farcaster,readonly \
   --mount type=bind,source=$PROMETHEUS_NODE_EXPORTER_PATH,target=/data \
   --network=host \
   lotus-farcaster
@@ -126,7 +126,7 @@ docker image rm lotus-farcaster
 ```
 
 ## Contact
-* Slack : @s0nik42
+* Slack : @Julien_NOEL_-_Twin_Quasar_(s0nik42) 
 
 ## Sponsors
 [<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/sponsors/protocol-labs.png" alt="Protcol Labs" width="250">

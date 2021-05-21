@@ -25,62 +25,86 @@
 IUSER="$1"
 PROMETHEUS_NODE_EXPORTER_FOLDER="/var/lib/prometheus/node-exporter/" # DEFAULT UBUNTU LOCATION
 EXEC_PATH="$(dirname $0)"
+if [ -n "$IUSER" ]
+then
+    IUSER_HOME=$(getent passwd "$IUSER" | cut -d: -f6)
+fi
 
 if [ "$(id -u)" -ne 0 ]
 then
 	echo "ERROR: must be run as root"
+    exit 1
 elif [ -z "$IUSER" ]
 then
 	echo "Usage: $0 LOTUS_USER_USERNAME"
+    exit 1
 elif [ ! "$(id $IUSER)" ]
 then
 	echo "ERROR: user $IUSER doesn't exist"
-elif [ ! -f "$(getent passwd $IUSER | cut -d: -f6)/.lotus/config.toml" ]
+    exit 1
+elif [ -z "$IUSER_HOME" ]
 then
-	echo "ERROR: user $IUSER doesn't seems to be a lotus user $(getent passwd $IUSER | cut -d: -f6)/.lotus/config.toml doesn't exist"
+    echo "ERROR: cannot find user $IUSER home"
+    exit 1
+elif [ ! -f "$IUSER_HOME/.lotus/config.toml" ]
+then
+	echo "WARNING: user $IUSER doesn't seems to be a lotus user $IUSER_HOME/.lotus/config.toml doesn't exist"
+    echo "Continuing anyway"
+fi
+
+echo 
+echo "Installing required debian packages : "
+echo "------------------------------------- "
+apt install python3-toml python3-aiohttp prometheus-node-exporter
+
+echo 
+echo "Install python packages : "
+echo "------------------------- "
+pip3 install py-multibase
+
+echo 
+echo "Check :"
+echo "------- "
+echo -n "prometheus-node-exporter : " 
+r=$(curl -s -o - http://localhost:9100/metrics |wc -l 2>/dev/null)
+if [ "$r" -gt 0 ]
+then
+    echo "[ OK ] : properly installed"
 else
-    echo 
-	echo "Installing required debian packages : "
-	echo "------------------------------------- "
-	apt install python3-toml prometheus-node-exporter
+    echo "[ KO ] : Error cannot connect to prometheus-node-exporter"
+    exit 1
+fi
 
-    echo 
-    echo "Check :"
-	echo "------- "
-    echo -n "prometheus-node-exporter : " 
-    r=$(curl -s -o - http://localhost:9100/metrics |wc -l 2>/dev/null)
-    if [ "$r" -gt 0 ]
-    then
-        echo "[ OK ] : properly installed"
-    else
-        echo "[ KO ] : Error cannot connect to prometheus-node-exporter"
-    fi
-
-	echo -e "\nFinishing installation : "
-	echo      "------------------------ "
-	set -x
-	cp "$EXEC_PATH/lotus-exporter-farcaster.py" "/usr/local/bin"
-	chown "$IUSER" "$EXEC_PATH/lotus-exporter-farcaster.py"
-	chmod +x "$EXEC_PATH/lotus-exporter-farcaster.py"
-	chmod g+r "$PROMETHEUS_NODE_EXPORTER_FOLDER"
-	chmod g+w "$PROMETHEUS_NODE_EXPORTER_FOLDER"
-	chgrp "$IUSER" "$PROMETHEUS_NODE_EXPORTER_FOLDER"
-	cat "$EXEC_PATH/lotus-exporter-farcaster.cron" |sed "s/LOTUS_USER/$IUSER/" > "/etc/cron.d/lotus-exporter-farcaster"
-	set +x
-	cat << EOF 
+echo -e "\nFinishing installation : "
+echo      "------------------------ "
+set -x
+cp "$EXEC_PATH/lotus-exporter-farcaster.py" "/usr/local/bin"
+chown "$IUSER" "$EXEC_PATH/lotus-exporter-farcaster.py"
+chmod +x "$EXEC_PATH/lotus-exporter-farcaster.py"
+# It seems like sometimes the prometheus-node-exporter remove the rights to the folder. I suspect the folder is not created yet
+mkdir -p "$PROMETHEUS_NODE_EXPORTER_FOLDER"
+chmod g+r "$PROMETHEUS_NODE_EXPORTER_FOLDER"
+chmod g+w "$PROMETHEUS_NODE_EXPORTER_FOLDER"
+chgrp "$IUSER" "$PROMETHEUS_NODE_EXPORTER_FOLDER"
+cat "$EXEC_PATH/lotus-exporter-farcaster.cron" |sed "s/LOTUS_USER/$IUSER/" > "/etc/cron.d/lotus-exporter-farcaster"
+mkdir -p "$IUSER_HOME/.lotus-exporter-farcaster/"
+cp "$EXEC_PATH/addresses.toml.example" "$IUSER_HOME/.lotus-exporter-farcaster/"
+chown "$IUSER" "$IUSER_HOME/.lotus-exporter-farcaster/"
+set +x
+cat << EOF 
 
 FARCASTER INSTALLATION COMPLETED
 
 ********************************************************************************
 
-TESTING : run the check.sh script : $EXEC_PATH/check.sh LOTUS_USER_USERNAME
+TESTING : run the check.sh script :
+$EXEC_PATH/check.sh LOTUS_USER_USERNAME
 
 NEXT STEPS : 
-  - Add this node to your prometheus server
-  - Add the farecaster dashboard to grafana (import through ui)
+- Add this node to your prometheus server
+- Add the farecaster dashboard to grafana (import through ui)
+- (Optional) Add knwown addresses and external wallets to $IUSER_HOME/.lotus-exporter-farcaster/
 
 ********************************************************************************
 EOF
-	exit 0
-fi
-exit 1
+exit 0

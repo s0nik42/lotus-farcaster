@@ -48,19 +48,19 @@ fi
 echo -e "$OK"
 
 echo -n "Check if $IUSER is a lotus user : "
-if [ ! -f "$(getent passwd $IUSER | cut -d: -f6)/.lotus/config.toml" ]
+if [ ! -f "$(getent passwd "$IUSER" | cut -d: -f6)/.lotus/config.toml" ]
 then
-	echo -e "$KO user $IUSER doesn't seems to be a lotus user $(getent passwd $IUSER | cut -d: -f6)/.lotus/config.toml doesn't exist"
+	echo -e "$KO user $IUSER doesn't seems to be a lotus user $(getent passwd "$IUSER" | cut -d: -f6)/.lotus/config.toml doesn't exist"
     exit 1
 fi
 echo -e "$OK"
 
 echo -n "Check if lotus-exporter-farcaster.py run properly : "
 r=$(sudo -u "$IUSER" /usr/local/bin/lotus-exporter-farcaster.py)
-if [ $(echo "$r" | grep -c 'lotus_scrape_execution_succeed { } 1') -eq 0 ]
+if [ $(echo "$r" | grep -c 'lotus_scrape_execution_succeed {  } 1') -eq 0 ]
 then
     echo -e "$KO error encountered : "
-    echo "$r" | tail -10 | while read a
+    echo "$r" | while read a
     do
         echo -e "\t $a"
     done
