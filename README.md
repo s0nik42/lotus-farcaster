@@ -1,5 +1,11 @@
 ![SCREENSHOT](https://github.com/s0nik42/lotus-farcaster/raw/main/images/screenshots/screenshot001.png)
 
+# VERSION 2 is OUT :
+**for V1 users upgrading to V2 :**
+- **DON'T FORGET TO UPDATE GRAFANA TO VERSION 7.4.0**
+- **REIMPORT THE NEW GRAFANA DASHBOARD**
+- **INSTALL the new lotus-exporter-farcaster (instruction below)**
+
 # lotus-farcaster 
 is a Visualization and Analytics tool for [Lotus](https://github.com/filecoin-project/lotus) Filecoin node. It provides advance analytics features (Like average sealing time, historical). Its designed to replace your terminal monitoring. Farcaster is developped in cooperation with Protocol Labs. 
 It leverages [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/) and Python.
