@@ -6,6 +6,9 @@ ARG FREQUENCY=50
 # Set environment variables to build arguments
 ENV FREQUENCY=$FREQUENCY
 
+# Ensure python dependences
+RUN pip3 install aiohttp toml py-multibase
+
 # Copy lotus-farcaster program and shell script that invokes it to the container
 COPY lotus-exporter-farcaster/lotus-exporter-farcaster.py /usr/local/bin/
 COPY dockerfiles/docker_run_script.sh /usr/local/bin/
