@@ -42,6 +42,10 @@ SOFTWARE.
 #   - Farcaster Status
 #   - Deployment toolset
 #   - Support seamless network upgrade, resolving actor_code change. (implies using py-multibase)
+# v2.0.3:
+#   - Trigger exception when api return no result
+# Futur Release v3
+#   - Add Deal transfer
 
 from urllib.parse import urlparse
 from pathlib import Path
@@ -55,7 +59,7 @@ import aiohttp
 import toml
 import multibase
 
-VERSION = "v2.0.2"
+VERSION = "v2.0.3"
 
 #
 # OVERRIDE AUTODETECTED CONFIG VALUES (should only be used if autodetection is failling)
@@ -187,57 +191,6 @@ class Lotus:
                             "RestoreBytes"]
                     }
 
-    #actor_code = {
-    #    """ From here : https://github.com/filecoin-project/statediff/blob/1ffb96bc6685b9a41a9eb45062e69c108115461d/transform.go#L118"""
-        #"bafkqaddgnfwc6mjpon4xg5dfnu":                 "System",
-        #"bafkqactgnfwc6mjpnfxgs5a":                    "Init",
-        #"bafkqaddgnfwc6mjpojsxoylsmq":                 "Reward",
-        #"bafkqactgnfwc6mjpmnzg63q":                    "Cron",
-        #"bafkqaetgnfwc6mjpon2g64tbm5sxa33xmvza":       "StoragePower",
-        #"bafkqae3gnfwc6mjpon2g64tbm5sw2ylsnnsxi":      "StorageMarket",
-        #"bafkqaftgnfwc6mjpozsxe2lgnfswi4tfm5uxg5dspe": "VerifiedRegistry",
-        #"bafkqadlgnfwc6mjpmfrwg33vnz2a":               "Account",
-        #"bafkqadtgnfwc6mjpnv2wy5djonuwo":              "Multisig",
-        #"bafkqafdgnfwc6mjpobqxs3lfnz2gg2dbnzxgk3a":    "PaymentChannel",
-        #"bafkqaetgnfwc6mjpon2g64tbm5sw22lomvza":       "StorageMiner",
-        # v2
-        #"bafkqaddgnfwc6mrpon4xg5dfnu":                 "System",
-        #"bafkqactgnfwc6mrpnfxgs5a":                    "Init",
-        #"bafkqaddgnfwc6mrpojsxoylsmq":                 "Reward",
-        #"bafkqactgnfwc6mrpmnzg63q":                    "Cron",
-        #"bafkqaetgnfwc6mrpon2g64tbm5sxa33xmvza":       "StoragePower",
-        #"bafkqae3gnfwc6mrpon2g64tbm5sw2ylsnnsxi":      "StorageMarket",
-        #"bafkqaftgnfwc6mrpozsxe2lgnfswi4tfm5uxg5dspe": "VerifiedRegistry",
-        #"bafkqadlgnfwc6mrpmfrwg33vnz2a":               "Account",
-        #"bafkqadtgnfwc6mrpnv2wy5djonuwo":              "Multisig",
-        #"bafkqafdgnfwc6mrpobqxs3lfnz2gg2dbnzxgk3a":    "PaymentChannel",
-        #"bafkqaetgnfwc6mrpon2g64tbm5sw22lomvza":       "StorageMiner",
-        # v3 - Generated using : home made generate_cid.go
-        #"bafkqaddgnfwc6mzpon4xg5dfnu":                 "System",
-        #"bafkqactgnfwc6mzpnfxgs5a":                    "Init",
-        #"bafkqaddgnfwc6mzpojsxoylsmq":                 "Reward",
-        #"bafkqactgnfwc6mzpmnzg63q":                    "Cron",
-        #"bafkqaetgnfwc6mzpon2g64tbm5sxa33xmvza":       "StoragePower",
-        #"bafkqae3gnfwc6mzpon2g64tbm5sw2ylsnnsxi":      "StorageMarket",
-        #"bafkqaftgnfwc6mzpozsxe2lgnfswi4tfm5uxg5dspe": "VerifiedRegistry",
-        #"bafkqadlgnfwc6mzpmfrwg33vnz2a":               "Account",
-        #"bafkqadtgnfwc6mzpnv2wy5djonuwo":              "Multisig",
-        #"bafkqafdgnfwc6mzpobqxs3lfnz2gg2dbnzxgk3a":    "PaymentChannel",
-        #"bafkqaetgnfwc6mzpon2g64tbm5sw22lomvza":       "StorageMiner",
-        # v4 - Generated using : home made generate_cid.go
-        #"bafkqaddgnfwc6nbpon4xg5dfnu":                 "System",
-        #"bafkqactgnfwc6nbpnfxgs5a":                    "Init",
-        #"bafkqaddgnfwc6nbpojsxoylsmq":                 "Reward",
-        #"bafkqactgnfwc6nbpmnzg63q":                    "Cron",
-        #"bafkqaetgnfwc6nbpon2g64tbm5sxa33xmvza":       "StoragePower",
-        #"bafkqae3gnfwc6nbpon2g64tbm5sw2ylsnnsxi":      "StorageMarket",
-        #"bafkqaftgnfwc6nbpozsxe2lgnfswi4tfm5uxg5dspe": "VerifiedRegistry",
-        #"bafkqadlgnfwc6nbpmfrwg33vnz2a":               "Account",
-        #"bafkqadtgnfwc6nbpnv2wy5djonuwo":              "Multisig",
-        #"bafkqafdgnfwc6nbpobqxs3lfnz2gg2dbnzxgk3a":    "PaymentChannel",
-        #"bafkqaetgnfwc6nbpon2g64tbm5sw22lomvza":       "StorageMiner"
-    #}
-
     actor_type = {
         b"system":           "System",
         b"init":             "Init",
@@ -309,21 +262,28 @@ class Lotus:
             raise MinerError(e_generic)
         self.miner_id = actoraddress['result']
 
+    def format_Warning(message, category, filename, lineno, line=''):
+        return str(filename) + ':' + str(lineno) + ': ' + category.__name__ + ': ' +str(message) + '\n'
+
     def daemon_get_json(self, method, params):
         """Send a request to the daemon API / This function rely on the function that support async, but present a much simpler interface"""
         try:
-            result = self.daemon_get_json_multiple([[method, params]])
+            result = self.daemon_get_json_multiple([[method, params]])[0]
         except Exception as e_generic:
             raise DaemonError(e_generic)
-        return result[0]
+        if "error" in result.keys():
+            raise DaemonError(f"\nTarget : daemon\nMethod : {method}\nParams : {params}\nResult : {result}")
+        return result
 
     def miner_get_json(self, method, params):
         """Send a request to the miner API / This function rely on the function that support async, but present a much simpler interface"""
         try:
-            result = self.miner_get_json_multiple([[method, params]])
+            result = self.miner_get_json_multiple([[method, params]])[0]
         except Exception as e_generic:
             raise MinerError(e_generic)
-        return result[0]
+        if "error" in result.keys():
+            raise MinerError(f"\nTarget : miner\nMethod : {method}\nParams : {params}\nResult : {result}")
+        return result
 
     def daemon_get_json_multiple(self, requests):
         """ Send multiple request in Async mode to the daemon API"""
@@ -713,25 +673,51 @@ class Lotus:
         external_wallets = external_wallets or {}
 
         res = {}
+
+        # 1 Add wallet adresses to the loop and manage the case where wallet adress doesnt exist onchain because never get any transaction
         walletlist = self.__get_local_wallet_list()
-
         for addr in walletlist:
-            res[addr] = {}
-            res[addr]["balance"] = self.daemon_get_json("WalletBalance", [addr])["result"]
-            res[addr]["name"] = self.__address_lookup(addr)
-            res[addr]["verified_datacap"] = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])["result"]
+            try:
+                balance = self.daemon_get_json("WalletBalance", [addr])["result"]
+            except Exception as e_generic:
+                print(f"Warning : cannot retrieve {addr} balance : {e_generic}", file=sys.stderr)
+                continue
 
-        # Add miner balance :
+            # Add address to the list
+            res[addr] = {}
+            res[addr]["balance"] = balance
+            res[addr]["name"] = self.__address_lookup(addr)
+
+            try:
+                verified_result = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
+                res[addr]["verified_datacap"] = verified_result["result"]
+            except Exception:
+                res[addr]["verified_datacap"] = 0
+
+        # 2 Add miner balance
         res[self.miner_id] = {}
         res[self.miner_id]["balance"] = self.daemon_get_json("StateMinerAvailableBalance", [self.miner_id, self.tipset_key()])["result"]
         res[self.miner_id]["name"] = self.miner_id
         res[self.miner_id]["verified_datacap"] = self.daemon_get_json("StateVerifiedClientStatus", [self.miner_id, self.tipset_key()])["result"]
-        # Add external_wallets :
+
+        # 3 Add external_wallets :
         for addr in external_wallets:
+            try:
+                balance = self.daemon_get_json("WalletBalance", [addr])["result"]
+            except Exception as e_generic:
+                print(f"Warning : cannot retrieve {addr} balance : {e_generic}", file=sys.stderr)
+                continue
+
+            # Add address to the list
             res[addr] = {}
-            res[addr]["balance"] = self.daemon_get_json("WalletBalance", [addr])["result"]
+            res[addr]["balance"] = balance
             res[addr]["name"] = external_wallets[addr]
-            res[addr]["verified_datacap"] = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])["result"]
+
+            try:
+                verified_result = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
+                res[addr]["verified_datacap"] = verified_result["result"]
+            except Exception:
+                res[addr]["verified_datacap"] = 0
 
         return res
 
@@ -1328,11 +1314,11 @@ def main():
     #   print(miner_get("MarketListRetrievalDeals",[]))
     #   GENERATE DATA TRANSFERS
     #   print(miner_get("MarketListDataTransfers",[]))
-    # Deals :
-    #   WaitDeal (list of deals/ Since / SealWaitingTime) (To long it takes 30sec now for 2000Deals)
+    #   Pending Deals
+    #   MarketPendingDeals
+    # Deals : MarketListIncompleteDeals
     # Others :
     #   A quoi correcpond le champs retry dans le SectorStatus
-    #   Deals in publish deals list
     #   rajouter les errors de sectors
     #   print(daemon_get("StateMinerFaults",[miner_id,LOTUS_OBJ.tipset_key()]))
 
