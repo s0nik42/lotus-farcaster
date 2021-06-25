@@ -1321,6 +1321,7 @@ def main():
     #   A quoi correcpond le champs retry dans le SectorStatus
     #   rajouter les errors de sectors
     #   print(daemon_get("StateMinerFaults",[miner_id,LOTUS_OBJ.tipset_key()]))
+    # Add Partition to Deadlines
 
 if __name__ == "__main__":
 
