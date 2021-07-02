@@ -55,7 +55,7 @@ fi
 echo 
 echo "Installing required debian packages : "
 echo "------------------------------------- "
-apt install python3-toml python3-aiohttp prometheus-node-exporter
+apt install python3-toml python3-aiohttp python3-pip prometheus-node-exporter 
 
 echo 
 echo "Install python packages : "
