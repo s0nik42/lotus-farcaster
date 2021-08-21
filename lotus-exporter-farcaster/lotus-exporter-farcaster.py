@@ -25,6 +25,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+# Release v3
+#   - Expired sectors
+
 # Release v2
 #   - Object oriented code
 #   - Added basefee
@@ -96,6 +99,25 @@ class Lotus:
     miner_token = None
     daemon_token = None
     known_addresses = {}
+
+    status_name = [
+        "Requested",
+        "Ongoing",
+        "TransferFinished",
+        "ResponderCompleted",
+        "Finalizing",
+        "Completing",
+        "Completed",
+        "Failing",
+        "Failed",
+        "Cancelling",
+        "Cancelled",
+        "InitiatorPaused",
+        "ResponderPaused",
+        "BothPaused",
+        "ResponderFinalizing",
+        "ResponderFinalizingTransferFinished",
+        "ChannelNotFoundError"]
 
     message_type = {"Account":
                         [
@@ -753,6 +775,15 @@ class Lotus:
             self.get_chain_head()
         return self.__basefee
 
+    def get_market_data_transfers_enhanced(self):
+        """ return on-going data-transfers with status name """
+        res = self.miner_get_json("MarketListDataTransfers", [])["result"]
+        for id, transfer in enumerate(res):
+            res[id]["Status"] = self.status_name[transfer["Status"]]
+
+        return res
+
+
 class Metrics:
     """ This class manage prometheus metrics formatting / checking / print """
 
@@ -767,6 +798,7 @@ class Metrics:
         "chain_sync_status"                         : {"type" : "gauge", "help": "return daemon sync status with chainhead for each daemon worker"},
         "info"                                      : {"type" : "gauge", "help": "lotus daemon information like address version, value is set to network version number"},
         "local_time"                                : {"type" : "gauge", "help": "time on the node machine when last execution start in epoch"},
+        "miner_data_transfers"                      : {"type" : "gauge", "help": "data-transfer information"},
         "miner_deadline_active_partition_sector"    : {"type" : "gauge", "help": "sector belonging to the partition_id of the deadline_id"},
         "miner_deadline_active_partitions"          : {"type" : "gauge", "help": "number of partitions in the deadline"},
         "miner_deadline_active_partitions_proven"   : {"type" : "gauge", "help": "number of partitions already proven for the deadline"},
@@ -1292,6 +1324,29 @@ def main():
                     storage_unverified_price=market_info["storage"]["Price"],
                     storage_verified_price=market_info["storage"]["VerifiedPrice"],
                     )
+
+
+    # GENERATE  DATA TRANSFERS
+    data_transfers = LOTUS_OBJ.get_market_data_transfers_enhanced()
+    for transfer in data_transfers:
+        try:
+            voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
+        except Exception:
+            voucher = ""
+
+        METRICS_OBJ.add("miner_data_transfers", value=1,
+            miner_id=miner_id,
+            transfer_id=transfer["TransferID"],
+            status=transfer["Status"],
+            base_cid=transfer["BaseCID"]["/"],
+            is_initiator=transfer["IsInitiator"],
+            is_sender=transfer["IsSender"],
+            voucher=voucher,
+            message=transfer["Message"].replace("\n", "  "),
+            other_peer=transfer["OtherPeer"],
+            transferred=transfer["Transferred"],
+            stages=transfer["Stages"])
+
     checkpoint("Market")
 
     # GENERATE DEALS INFOS
@@ -1307,6 +1362,9 @@ def main():
     METRICS_OBJ.print_all()
 
     # XXX TODO
+    # TODO :
+    #   - manage market node
+    #   - Support LOTUS PATH VARIABLES
     # Bugs :
     #   Gerer le bug lier à l'absence de Worker (champs GPU vide, etc...)
     # Retrieval Market :
