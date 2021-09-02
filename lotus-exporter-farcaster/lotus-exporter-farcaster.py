@@ -59,6 +59,7 @@ import aiohttp
 import toml
 import multibase
 import argparse
+import logging
 
 VERSION = "v2.0.3"
 
@@ -665,7 +666,7 @@ class Lotus:
             try:
                 balance = self.daemon_get_json("WalletBalance", [addr])["result"]
             except Exception as e_generic:
-                print(f"Warning : cannot retrieve {addr} balance : {e_generic}", file=sys.stderr)
+                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
                 continue
 
             # Add address to the list
@@ -690,7 +691,7 @@ class Lotus:
             try:
                 balance = self.daemon_get_json("WalletBalance", [addr])["result"]
             except Exception as e_generic:
-                print(f"Warning : cannot retrieve {addr} balance : {e_generic}", file=sys.stderr)
+                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
                 continue
 
             # Add address to the list
@@ -1034,9 +1035,9 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     base_info = daemon_get("MinerGetBaseInfo", [LOTUS_OBJ.miner_id, LOTUS_OBJ.chain_head()["Height"], LOTUS_OBJ.tipset_key()])
 
     if base_info["result"] is None:
-        print(f'ERROR MinerGetBaseInfo return no result', file=sys.stderr)
-        print(f'KNOWN_REASON your miner needs to have a power >0 for Farcaster to work. Its linked to a Lotus API bug)', file=sys.stderr)
-        print(f'SOLUTION restart your miner and node', file=sys.stderr)
+        logging.error(f'MinerGetBaseInfo returned no result')
+        logging.info(f'KNOWN_REASON your miner needs to have a power >0 for Farcaster to work. Its linked to a Lotus API bug)')
+        logging.info(f'SOLUTION restart your miner and node')
         METRICS_OBJ.add("scrape_execution_succeed", value=0)
         sys.exit(0)
 
@@ -1325,11 +1326,14 @@ if __name__ == "__main__":
     METRICS_OBJ = None
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
     parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
     parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")))
     parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
     parser.add_argument("--miner-path", default=os.environ.get("LOTUS_MINER_PATH", Path.home().joinpath(".lotusminer")))
     args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
 
     try:
         (daemon_token, daemon_url) = get_api_and_token(args.daemon_api, args.daemon_path)
