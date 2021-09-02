@@ -1304,6 +1304,19 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     #   print(daemon_get("StateMinerFaults",[miner_id,LOTUS_OBJ.tipset_key()]))
     # Add Partition to Deadlines
 
+def get_api_and_token(api, path):
+    if api:
+        [token, api] = api.split(":", 1)
+        [_, _, addr, _, port, proto] = api.split("/", 5)
+        url = f"{proto}://{addr}:{port}/rpc/v0"
+        return (token, url)
+    with open(path.joinpath("token"), "r") as f:
+        token = f.read()
+    with open(path.joinpath("api"), "r") as f:
+        [_, _, addr, _, port, proto] = f.read().split("/", 5)
+    url = f"{proto}://{addr}:{port}/rpc/v0"
+    return (token, url)
+
 if __name__ == "__main__":
 
     # Declare Global Variables
@@ -1313,18 +1326,20 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
+    parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")))
     parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
+    parser.add_argument("--miner-path", default=os.environ.get("LOTUS_MINER_PATH", Path.home().joinpath(".lotusminer")))
     args = parser.parse_args()
 
-    if args.daemon_api:
-        [daemon_token, api] = args.daemon_api.split(":", 1)
-        [_, _, addr, _, port, proto] = api.split("/", 5)
-        daemon_url = f"{proto}://{addr}:{port}/rpc/v0"
+    try:
+        (daemon_token, daemon_url) = get_api_and_token(args.daemon_api, args.daemon_path)
+    except Exception  as e_generic:
+        raise DaemonError(e_generic)
 
-    if args.miner_api:
-        [miner_token, api] = args.miner_api.split(":", 1)
-        [_, _, addr, _, port, proto] = api.split("/", 5)
-        miner_url = f"{proto}://{addr}:{port}/rpc/v0"
+    try:
+        (miner_token, miner_url) = get_api_and_token(args.miner_api, args.miner_path)
+    except Exception  as e_generic:
+        raise MinerError(e_generic)
 
     # execute only if run as a script
     main(miner_url, miner_token, daemon_url, daemon_token)
