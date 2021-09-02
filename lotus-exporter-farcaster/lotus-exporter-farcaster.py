@@ -58,6 +58,7 @@ import asyncio
 import aiohttp
 import toml
 import multibase
+import argparse
 
 VERSION = "v2.0.3"
 
@@ -1322,6 +1323,21 @@ if __name__ == "__main__":
     START_TIME = None
     LOTUS_OBJ = None
     METRICS_OBJ = None
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
+    parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
+    args = parser.parse_args()
+
+    if args.daemon_api:
+        [DAEMON_TOKEN, api] = args.daemon_api.split(":", 1)
+        [_, _, addr, _, port, proto] = api.split("/", 5)
+        DAEMON_URL = f"{proto}://{addr}:{port}/rpc/v0"
+
+    if args.miner_api:
+        [MINER_TOKEN, api] = args.miner_api.split(":", 1)
+        [_, _, addr, _, port, proto] = api.split("/", 5)
+        MINER_URL = f"{proto}://{addr}:{port}/rpc/v0"
 
     # execute only if run as a script
     main()
