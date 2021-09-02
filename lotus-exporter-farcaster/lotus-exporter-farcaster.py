@@ -62,19 +62,6 @@ import argparse
 
 VERSION = "v2.0.3"
 
-#
-# OVERRIDE AUTODETECTED CONFIG VALUES (should only be used if autodetection is failling)
-#
-# Example : MINER_URL = "http://127.0.0.1:2345/rpc/v0"
-MINER_URL = ""
-MINER_TOKEN = ""
-DAEMON_URL = ""
-DAEMON_TOKEN = ""
-
-#################################################################################
-# DO NOT EDIT BELOW
-#################################################################################
-
 #################################################################################
 # CLASS DEFINITION
 #################################################################################
@@ -938,10 +925,10 @@ def load_toml(toml_file):
     else:
         return nested_dict
 
-def main():
+def main(miner_url, miner_token, daemon_url, daemon_token):
     """ main function """
 
-    global START_TIME, MINER_URL, MINER_TOKEN, DAEMON_URL, DAEMON_TOKEN, LOTUS_OBJ, METRICS_OBJ
+    global START_TIME, LOTUS_OBJ, METRICS_OBJ
 
     # Start execution time mesurement
     START_TIME = time.time()
@@ -951,7 +938,7 @@ def main():
 
     # Create Lotus object
     try:
-        LOTUS_OBJ = Lotus(MINER_URL, MINER_TOKEN, DAEMON_URL, DAEMON_TOKEN)
+        LOTUS_OBJ = Lotus(miner_url, miner_token, daemon_url, daemon_token)
     except DaemonError as e_generic:
         terminate(e_generic, -1)
     except MinerError as e_generic:
@@ -1330,14 +1317,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.daemon_api:
-        [DAEMON_TOKEN, api] = args.daemon_api.split(":", 1)
+        [daemon_token, api] = args.daemon_api.split(":", 1)
         [_, _, addr, _, port, proto] = api.split("/", 5)
-        DAEMON_URL = f"{proto}://{addr}:{port}/rpc/v0"
+        daemon_url = f"{proto}://{addr}:{port}/rpc/v0"
 
     if args.miner_api:
-        [MINER_TOKEN, api] = args.miner_api.split(":", 1)
+        [miner_token, api] = args.miner_api.split(":", 1)
         [_, _, addr, _, port, proto] = api.split("/", 5)
-        MINER_URL = f"{proto}://{addr}:{port}/rpc/v0"
+        miner_url = f"{proto}://{addr}:{port}/rpc/v0"
 
     # execute only if run as a script
-    main()
+    main(miner_url, miner_token, daemon_url, daemon_token)
