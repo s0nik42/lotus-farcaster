@@ -262,9 +262,6 @@ class Lotus:
             raise MinerError(e_generic)
         self.miner_id = actoraddress['result']
 
-    def format_Warning(message, category, filename, lineno, line=''):
-        return str(filename) + ':' + str(lineno) + ': ' + category.__name__ + ': ' +str(message) + '\n'
-
     def daemon_get_json(self, method, params):
         """Send a request to the daemon API / This function rely on the function that support async, but present a much simpler interface"""
         try:
@@ -877,10 +874,6 @@ def checkpoint(collector_name):
         COLLECTOR_START_TIME = START_TIME
     METRICS_OBJ.add("scrape_duration_seconds", value=(time.time() - COLLECTOR_START_TIME), collector=collector_name)
     COLLECTOR_START_TIME = time.time()
-
-def printj(parsed):
-    """JSON PRETTY PRINT // Dev only"""
-    print(json.dumps(parsed, indent=4, sort_keys=True))
 
 # REQUEST FUNCTIONS
 def daemon_get(method, params):
