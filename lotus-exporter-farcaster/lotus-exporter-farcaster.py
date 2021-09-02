@@ -49,6 +49,7 @@ SOFTWARE.
 
 from urllib.parse import urlparse
 from pathlib import Path
+from contextlib import contextmanager
 import json
 import time
 import sys
@@ -811,7 +812,18 @@ class Metrics:
 
     def __init__(self):
         self._printed_metrics = set()
-        self.print("local_time", value=int(time.time()))
+        self.__enter__()
+
+    def __enter__(self):
+        self._start_time = time.time()
+        self._succeeded = True
+        self.print("local_time", value=int(self._start_time))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        succeeded = exc_val is None
+        self.print("scrape_duration_seconds", value=(time.time() - self._start_time), collector="All")
+        self.print("scrape_execution_succeed", value=int(succeeded))
 
     def print(self, metric: str = "", value: float = 1, **labels):
         """ add a new metrics """
@@ -829,6 +841,19 @@ class Metrics:
         # Printout the formatted metric
         labels_txt = ", ".join(f'{ l }="{ v }"' for l, v in labels.items())
         print(f'{self.__PREFIX}{ metric } {{ { labels_txt } }} { value }')
+
+    @contextmanager
+    # Create a new collector context that will record the scrape duration for this category of metrics
+    def collector(self, collector_name):
+        start_time = time.time()
+        succeeded = True
+        try:
+            yield self
+        except:
+            succeeded = False
+        finally:
+            self.print("scrape_duration_seconds", value=(time.time() - start_time), collector=collector_name)
+            self.print("scrape_execution_succeed", value=int(succeeded), collector=collector_name)
 
 #################################################################################
 # FUNCTIONS
