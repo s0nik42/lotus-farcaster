@@ -827,15 +827,8 @@ class Metrics:
             self._printed_metrics.add(metric)
 
         # Printout the formatted metric
-        print(f'{self.__PREFIX}{ metric } {{ ', end="")
-        first = True
-        for i in labels.keys():
-            if first is True:
-                first = False
-            else:
-                print(', ', end="")
-            print(f'{ i }="{ labels[i] }"', end="")
-        print(f' }} { value }')
+        labels_txt = ", ".join(f'{ l }="{ v }"' for l, v in labels.items())
+        print(f'{self.__PREFIX}{ metric } {{ { labels_txt } }} { value }')
 
 #################################################################################
 # FUNCTIONS
