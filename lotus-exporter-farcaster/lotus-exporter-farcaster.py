@@ -203,10 +203,7 @@ class Lotus(object):
         self.daemon_token = daemon_token
 
         # RETRIEVE MINER ID
-        try:
-            actoraddress = self.miner_get_json("ActorAddress", [])
-        except Exception as e_generic:
-            raise MinerError(e_generic)
+        actoraddress = self.miner_get_json("ActorAddress", [])
         self.miner_id = actoraddress['result']
 
     def daemon_get_json(self, method, params):
@@ -251,23 +248,15 @@ class Lotus(object):
         params = request[1]
         jsondata = {"jsonrpc": "2.0", "method": "Filecoin." + method, "params": params, "id": 3}
 
-        try:
-            async with session.post(url, json=jsondata, headers=header) as response:
-                return await response.json(content_type=None)
-        except Exception as e_generic:
-            raise e_generic
+        async with session.post(url, json=jsondata, headers=header) as response:
+            return await response.json(content_type=None)
 
     async def __get_json_multiple(self, url, token, requests):
         async with aiohttp.ClientSession() as session:
             tasks = []
             for request in requests:
                 tasks.append(asyncio.ensure_future(self.__get_json(session, url, token, request)))
-            try:
-                results = await asyncio.gather(*tasks)
-            except Exception as e_generic:
-                raise e_generic
-
-            return results
+            return await asyncio.gather(*tasks)
 
     def bitfield_count(self, bitfield):
         """Count bits from golang Bitfield object.
