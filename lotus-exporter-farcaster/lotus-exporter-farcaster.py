@@ -747,7 +747,7 @@ class Lotus:
         try:
             result = self.daemon_get_json(method, params)
         except Exception as e_generic:
-            terminate(e_generic)
+            METRICS_OBJ.terminate(e_generic)
         return result
 
     def miner_get(self, method, params):
@@ -756,7 +756,7 @@ class Lotus:
         try:
             result = self.miner_get_json(method, params)
         except Exception as e_generic:
-            terminate(e_generic)
+            METRICS_OBJ.terminate(e_generic)
         return result
 
     def daemon_get_multiple(self, requests):
@@ -765,7 +765,7 @@ class Lotus:
         try:
             results = self.daemon_get_json_multiple(requests)
         except Exception as e_generic:
-            terminate(e_generic)
+            METRICS_OBJ.terminate(e_generic)
         return results
 
     def miner_get_multiple(self, requests):
@@ -774,7 +774,7 @@ class Lotus:
         try:
             results = self.miner_get_json_multiple(requests)
         except Exception as e_generic:
-            terminate(e_generic)
+            METRICS_OBJ.terminate(e_generic)
         return results
 
 class Metrics:
@@ -890,24 +890,25 @@ class Metrics:
             self.print("scrape_duration_seconds", value=(time.time() - start_time), collector=collector_name)
             self.print("scrape_execution_succeed", value=int(succeeded), collector=collector_name)
 
+    def checkpoint(self, collector_name):
+        """Measure time for each category of calls to api and generate metrics"""
+        global COLLECTOR_START_TIME
+        if not COLLECTOR_START_TIME:
+            COLLECTOR_START_TIME = START_TIME
+        self.print("scrape_duration_seconds", value=(time.time() - COLLECTOR_START_TIME), collector=collector_name)
+        COLLECTOR_START_TIME = time.time()
+
+    def terminate(self, msg: str = "", value: int = 0):
+        """properly terminating the process execution on error."""
+        self.print("scrape_execution_succeed", value=value)
+        print(msg, file=sys.stderr)
+        sys.exit(0)
+
+
 #################################################################################
 # FUNCTIONS
 #################################################################################
 COLLECTOR_START_TIME = False
-def checkpoint(collector_name):
-    """Measure time for each category of calls to api and generate metrics"""
-    global COLLECTOR_START_TIME
-    if not COLLECTOR_START_TIME:
-        COLLECTOR_START_TIME = START_TIME
-    METRICS_OBJ.print("scrape_duration_seconds", value=(time.time() - COLLECTOR_START_TIME), collector=collector_name)
-    COLLECTOR_START_TIME = time.time()
-
-def terminate(msg: str = "", value: int = 0):
-    """properly terminating the process execution on error."""
-    METRICS_OBJ.print("scrape_execution_succeed", value=value)
-    print(msg, file=sys.stderr)
-    sys.exit(0)
-
 
 def load_toml(toml_file):
     """ Load a tmol file into nested dict"""
@@ -921,7 +922,7 @@ def load_toml(toml_file):
         with open(toml_file) as data_file:
             nested_dict = toml.load(data_file)
     except Exception as e_generic:
-        terminate(f'Error: loading file {toml_file} : {str(e_generic)}')
+        METRICS_OBJ.terminate(f'Error: loading file {toml_file} : {str(e_generic)}')
     else:
         return nested_dict
 
@@ -940,9 +941,9 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     try:
         LOTUS_OBJ = Lotus(miner_url, miner_token, daemon_url, daemon_token)
     except DaemonError as e_generic:
-        terminate(e_generic, -1)
+        METRICS_OBJ.terminate(e_generic, -1)
     except MinerError as e_generic:
-        terminate(e_generic, -2)
+        METRICS_OBJ.terminate(e_generic, -2)
 
     # miner_id
     miner_id = LOTUS_OBJ.miner_id
@@ -958,7 +959,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
 
     # CHAIN HEIGHT
     METRICS_OBJ.print("chain_height", value=LOTUS_OBJ.chain_head()["Height"], miner_id=miner_id)
-    checkpoint("ChainHead")
+    METRICS_OBJ.checkpoint("ChainHead")
 
     # GENERATE CHAIN SYNC STATUS
     sync_status = LOTUS_OBJ.daemon_get("SyncState", [])
@@ -969,11 +970,11 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
             diff_height = -1
         METRICS_OBJ.print("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
         METRICS_OBJ.print("chain_sync_status", value=worker["Stage"], miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
-    checkpoint("ChainSync")
+    METRICS_OBJ.checkpoint("ChainSync")
 
     # GENERATE MINER INFO
     miner_version = LOTUS_OBJ.miner_get("Version", [])
-    checkpoint("Miner")
+    METRICS_OBJ.checkpoint("Miner")
 
     # RETRIEVE MAIN ADDRESSES
     daemon_stats = LOTUS_OBJ.daemon_get("StateMinerInfo", [LOTUS_OBJ.miner_id, LOTUS_OBJ.tipset_key()])
@@ -997,14 +998,14 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
 
     METRICS_OBJ.print("miner_info", value=1, miner_id=miner_id, version=miner_version["result"]["Version"], owner=miner_owner, owner_addr=miner_owner_addr, worker=miner_worker, worker_addr=miner_worker_addr, control0=miner_control0, control0_addr=miner_control0_addr)
     METRICS_OBJ.print("miner_info_sector_size", value=daemon_stats["result"]["SectorSize"], miner_id=miner_id)
-    checkpoint("StateMinerInfo")
+    METRICS_OBJ.checkpoint("StateMinerInfo")
 
     # GENERATE DAEMON INFO
     daemon_network = LOTUS_OBJ.daemon_get("StateNetworkName", [])
     daemon_network_version = LOTUS_OBJ.daemon_get("StateNetworkVersion", [LOTUS_OBJ.tipset_key()])
     daemon_version = LOTUS_OBJ.daemon_get("Version", [])
     METRICS_OBJ.print("info", value=daemon_network_version["result"], miner_id=miner_id, version=daemon_version["result"]["Version"], network=daemon_network["result"])
-    checkpoint("Daemon")
+    METRICS_OBJ.checkpoint("Daemon")
 
     # GENERATE WALLET
     if "external_wallets" in addresses_config:
@@ -1021,7 +1022,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     locked_funds = LOTUS_OBJ.daemon_get("StateReadState", [LOTUS_OBJ.miner_id, LOTUS_OBJ.tipset_key()])
     for i in ["PreCommitDeposits", "LockedFunds", "FeeDebt", "InitialPledge"]:
         METRICS_OBJ.print("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=LOTUS_OBJ.miner_id, locked_type=i)
-    checkpoint("Balances")
+    METRICS_OBJ.checkpoint("Balances")
 
     # GENERATE POWER
     powerlist = LOTUS_OBJ.daemon_get("StateMinerPower", [LOTUS_OBJ.miner_id, LOTUS_OBJ.tipset_key()])
@@ -1045,7 +1046,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     else:
         eligibility = 0
     METRICS_OBJ.print("power_mining_eligibility", value=eligibility, miner_id=miner_id)
-    checkpoint("Power")
+    METRICS_OBJ.checkpoint("Power")
 
     # GENERATE MPOOL
     mpool_total = len(LOTUS_OBJ.daemon_get("MpoolPending", [LOTUS_OBJ.tipset_key()])["result"])
@@ -1057,7 +1058,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
 
     for msg in local_mpool:
         METRICS_OBJ.print("mpool_local_message", value=1, miner_id=miner_id, msg_from=msg["display_from"], msg_to=msg["display_to"], msg_nonce=msg["Nonce"], msg_value=msg["Value"], msg_gaslimit=msg["GasLimit"], msg_gasfeecap=msg["GasFeeCap"], msg_gaspremium=msg["GasPremium"], msg_method=msg["Method"], msg_method_type=msg["method_type"], msg_to_actor_type=msg["actor_type"])
-    checkpoint("MPool")
+    METRICS_OBJ.checkpoint("MPool")
 
     # GENERATE NET_PEERS
     daemon_netpeers = LOTUS_OBJ.daemon_get("NetPeers", [])
@@ -1065,7 +1066,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
 
     miner_netpeers = LOTUS_OBJ.miner_get("NetPeers", [])
     METRICS_OBJ.print("miner_netpeers_total", value=len(miner_netpeers["result"]), miner_id=miner_id)
-    checkpoint("NetPeers")
+    METRICS_OBJ.checkpoint("NetPeers")
 
     # GENERATE NETSTATS XXX Verfier la qualité des stats ... lotus net, API et Grafana sont tous differents
     protocols_list = LOTUS_OBJ.daemon_get("NetBandwidthStatsByProtocol", [])
@@ -1085,7 +1086,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     net_list = LOTUS_OBJ.miner_get("NetBandwidthStats", [])
     METRICS_OBJ.print("miner_net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
     METRICS_OBJ.print("miner_net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
-    checkpoint("NetBandwidth")
+    METRICS_OBJ.checkpoint("NetBandwidth")
 
     # GENERATE WORKER INFOS
     workerstats = LOTUS_OBJ.miner_get("WorkerStats", [])
@@ -1123,7 +1124,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
             METRICS_OBJ.print("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
             METRICS_OBJ.print("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
             METRICS_OBJ.print("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
-    checkpoint("Workers")
+    METRICS_OBJ.checkpoint("Workers")
 
     # GENERATE JOB INFOS
     workerjobs = LOTUS_OBJ.miner_get("WorkerJobs", [])
@@ -1142,7 +1143,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
             run_wait = str(job['RunWait'])
             job_start_epoch = time.mktime(time.strptime(job_start_time[:19], '%Y-%m-%dT%H:%M:%S'))
             METRICS_OBJ.print("miner_worker_job", value=(START_TIME - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
-    checkpoint("Jobs")
+    METRICS_OBJ.checkpoint("Jobs")
 
     # GENERATE JOB SCHEDDIAG
     scheddiag = LOTUS_OBJ.miner_get("SealingSchedDiag", [True])
@@ -1152,7 +1153,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
             sector = req["Sector"]["Number"]
             task = req["TaskType"]
             METRICS_OBJ.print("miner_worker_job", miner_id=miner_id, job_id="", worker="", task=task, sector_id=sector, start="", run_wait="99")
-    checkpoint("SchedDiag")
+    METRICS_OBJ.checkpoint("SchedDiag")
 
     # GENERATE SECTORS
     sector_list = LOTUS_OBJ.miner_get("SectorsList", [])
@@ -1225,7 +1226,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
 
                     METRICS_OBJ.print("miner_sector_sealing_deals_info", value=1, miner_id=miner_id, sector_id=sector, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
 
-    checkpoint("Sectors")
+    METRICS_OBJ.checkpoint("Sectors")
 
     # GENERATE DEADLINES
     deadlines = LOTUS_OBJ.get_deadlines_enhanced()
@@ -1246,7 +1247,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
                 is_recovering = "Recovering" in partition[sector_id]
                 is_faulty = "Faulty" in partition[sector_id]
                 METRICS_OBJ.print("miner_deadline_active_partition_sector", is_active=is_active, is_live=is_live, is_recovering=is_recovering, is_faulty=is_faulty, value=1, miner_id=miner_id, deadline_id=dl_id, partition_id=partition_id, sector_id=sector_id)
-    checkpoint("Deadlines")
+    METRICS_OBJ.checkpoint("Deadlines")
 
 
     # GENERATE STORAGE INFO
@@ -1255,7 +1256,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
         METRICS_OBJ.print("miner_storage_capacity", value=sto["capacity"], miner_id=miner_id, storage_id=sto["storage_id"])
         METRICS_OBJ.print("miner_storage_available", value=sto["available"], miner_id=miner_id, storage_id=sto["storage_id"])
         METRICS_OBJ.print("miner_storage_reserved", value=sto["reserved"], miner_id=miner_id, storage_id=sto["storage_id"])
-    checkpoint("Storage")
+    METRICS_OBJ.checkpoint("Storage")
 
     # GENERATE MARKET INFO
     market_info = LOTUS_OBJ.get_market_info_enhanced()
@@ -1273,7 +1274,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
                     storage_unverified_price=market_info["storage"]["Price"],
                     storage_verified_price=market_info["storage"]["VerifiedPrice"],
                     )
-    checkpoint("Market")
+    METRICS_OBJ.checkpoint("Market")
 
     # GENERATE DEALS INFOS
     # XXX NOT FINISHED
