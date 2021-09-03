@@ -195,55 +195,11 @@ class Lotus:
         b"storageminer":     "StorageMiner"
     }
 
-    def __init__(self, miner_url="", miner_token="", daemon_url="", daemon_token=""):
-        # Generate API URL (auto/manual)
-        if miner_url == '':
-            try:
-                with open(str(Path.home()) + "/.lotusminer/api", "r") as text_file:
-                    miner_api_line = text_file.read()
-            except Exception  as e_generic:
-                raise MinerError(e_generic)
-
-            miner_api = miner_api_line.split("/")
-            miner_api_ip = miner_api[2]
-            miner_api_port = miner_api[4]
-            self.miner_url = "http://" + miner_api_ip + ":" + miner_api_port + "/rpc/v0"
-        else:
-            self.miner_url = miner_url
-
-        # Generate API URL (auto/manual)
-        if daemon_url == '':
-            try:
-                with open(str(Path.home()) + "/.lotus/api", "r") as text_file:
-                    daemon_api_line = text_file.read()
-            except Exception  as e_generic:
-                raise DaemonError(e_generic)
-            daemon_api = daemon_api_line.split("/")
-            daemon_api_ip = daemon_api[2]
-            daemon_api_port = daemon_api[4]
-            self.daemon_url = "http://" + daemon_api_ip + ":" + daemon_api_port + "/rpc/v0"
-        else:
-            self.daemon_url = daemon_url
-
-        # Retrieve Token to connect miner API
-        if miner_token == '':
-            try:
-                with open(str(Path.home()) + "/.lotusminer/token", "r") as text_file:
-                    self.miner_token = text_file.read()
-            except Exception  as e_generic:
-                raise MinerError(e_generic)
-        else:
-            self.miner_token = miner_token
-
-        # Retrieve Token to connect daemon API
-        if daemon_token == '':
-            try:
-                with open(str(Path.home()) + "/.lotus/token", "r") as text_file:
-                    self.daemon_token = text_file.read()
-            except Exception  as e_generic:
-                raise DaemonError(e_generic)
-        else:
-            self.daemon_token = daemon_token
+    def __init__(self, miner_url, miner_token, daemon_url, daemon_token):
+        self.miner_url = miner_url
+        self.daemon_url = daemon_url
+        self.miner_token = miner_token
+        self.daemon_token = daemon_token
 
         # RETRIEVE MINER ID
         try:
