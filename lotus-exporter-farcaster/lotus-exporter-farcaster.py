@@ -61,6 +61,7 @@ import toml
 import multibase
 import argparse
 import logging
+from functools import wraps
 
 VERSION = "v2.0.3"
 
@@ -68,10 +69,26 @@ VERSION = "v2.0.3"
 # CLASS DEFINITION
 #################################################################################
 
-class MinerError(Exception):
+class Error(Exception):
+    """Exception from this module"""
+
+    @classmethod
+    def wrap(cls, f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except cls:
+                # Don't wrap already wrapped exceptions
+                raise
+            except Exception as exc:
+                raise DaemonError from exc
+        return wrapper
+
+class MinerError(Error):
     """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
 
-class DaemonError(Exception):
+class DaemonError(Error):
     """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
 
 class Lotus(object):
@@ -206,41 +223,31 @@ class Lotus(object):
         actoraddress = self.miner_get_json("ActorAddress", [])
         self.miner_id = actoraddress['result']
 
+    @DaemonError.wrap
     def daemon_get_json(self, method, params):
         """Send a request to the daemon API / This function rely on the function that support async, but present a much simpler interface"""
-        try:
-            result = self.daemon_get_json_multiple([[method, params]])[0]
-        except Exception as e_generic:
-            raise DaemonError(e_generic)
+        result = self.daemon_get_json_multiple([[method, params]])[0]
         if "error" in result.keys():
             raise DaemonError(f"\nTarget : daemon\nMethod : {method}\nParams : {params}\nResult : {result}")
         return result
 
+    @MinerError.wrap
     def miner_get_json(self, method, params):
         """Send a request to the miner API / This function rely on the function that support async, but present a much simpler interface"""
-        try:
-            result = self.miner_get_json_multiple([[method, params]])[0]
-        except Exception as e_generic:
-            raise MinerError(e_generic)
+        result = self.miner_get_json_multiple([[method, params]])[0]
         if "error" in result.keys():
             raise MinerError(f"\nTarget : miner\nMethod : {method}\nParams : {params}\nResult : {result}")
         return result
 
+    @DaemonError.wrap
     def daemon_get_json_multiple(self, requests):
         """ Send multiple request in Async mode to the daemon API"""
-        try:
-            results = asyncio.run(self.__get_json_multiple(self.daemon_url, self.daemon_token, requests))
-        except Exception as e_generic:
-            raise DaemonError(e_generic)
-        return results
+        return asyncio.run(self.__get_json_multiple(self.daemon_url, self.daemon_token, requests))
 
+    @MinerError.wrap
     def miner_get_json_multiple(self, requests):
         """ Send multiple request in Async mode to the miner API"""
-        try:
-            results = asyncio.run(self.__get_json_multiple(self.miner_url, self.miner_token, requests))
-        except Exception as e_generic:
-            raise MinerError(e_generic)
-        return results
+        return asyncio.run(self.__get_json_multiple(self.miner_url, self.miner_token, requests))
 
     async def __get_json(self, session, url, token, request):
         header = {'Authorization': 'Bearer ' + token}
