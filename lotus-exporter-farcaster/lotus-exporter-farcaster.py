@@ -881,7 +881,7 @@ def load_toml(toml_file):
     else:
         return nested_dict
 
-def main(miner_url, miner_token, daemon_url, daemon_token):
+def main(miner_url, miner_token, daemon_url, daemon_token, farcaster_path):
     """ main function """
 
     global START_TIME, LOTUS_OBJ, METRICS_OBJ
@@ -904,7 +904,7 @@ def main(miner_url, miner_token, daemon_url, daemon_token):
     miner_id = LOTUS_OBJ.miner_id
 
     # Load config file to retrieve external wallet and vlookup
-    addresses_config = load_toml(f"{str(Path.home())}/.lotus-exporter-farcaster/addresses.toml")
+    addresses_config = load_toml(farcaster_path.joinpath("addresses.toml"))
 
     # Add KNOWN_ADDRESSES to Lotus OBJ
     if "known_addresses" in addresses_config.keys():
@@ -1285,6 +1285,7 @@ if __name__ == "__main__":
     parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")))
     parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
     parser.add_argument("--miner-path", default=os.environ.get("LOTUS_MINER_PATH", Path.home().joinpath(".lotusminer")))
+    parser.add_argument("--farcaster-path", default=os.environ.get("LOTUS_FARCASTER_PATH", Path.home().joinpath(".lotus-exporter-farcaster")))
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
@@ -1300,4 +1301,4 @@ if __name__ == "__main__":
         raise MinerError(e_generic)
 
     # execute only if run as a script
-    main(miner_url, miner_token, daemon_url, daemon_token)
+    main(miner_url, miner_token, daemon_url, daemon_token, farcaster_path=args.farcaster_path)
