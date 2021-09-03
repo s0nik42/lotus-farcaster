@@ -265,7 +265,8 @@ class Lotus(object):
                 tasks.append(asyncio.ensure_future(self.__get_json(session, url, token, request)))
             return await asyncio.gather(*tasks)
 
-    def bitfield_count(self, bitfield):
+    @staticmethod
+    def bitfield_count(bitfield):
         """Count bits from golang Bitfield object.
 
         s0nik42 reverse engineering
@@ -278,7 +279,8 @@ class Lotus(object):
             count += bitfield[i+1]
         return count
 
-    def bitfield_to_dict(self, bitfield, state, target=None):
+    @staticmethod
+    def bitfield_to_dict(bitfield, state, target=None):
         """Return target enrich by the state of sectors based on a Goland Bitfield deadline"""
 
         target = target or {}
@@ -418,7 +420,8 @@ class Lotus(object):
             deal["Provider"] = self.__address_lookup(deal["Provider"])
         return deal
 
-    def qa_power_for_weight(self, size, duration, deal_weight, verified_weight):
+    @staticmethod
+    def qa_power_for_weight(size, duration, deal_weight, verified_weight):
         """ Calculate the Quality adjusted power of a sector based on deals weight.
             Lotus source reference : https://github.com/filecoin-project/specs-actors/blob/8e3ed3d4e3f127577248004c841a41557a91ced2/actors/builtin/miner/policy.go#L271
         """
