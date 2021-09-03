@@ -890,13 +890,13 @@ class Metrics:
             self.print("scrape_duration_seconds", value=(time.time() - start_time), collector=collector_name)
             self.print("scrape_execution_succeed", value=int(succeeded), collector=collector_name)
 
+    COLLECTOR_START_TIME = False
     def checkpoint(self, collector_name):
         """Measure time for each category of calls to api and generate metrics"""
-        global COLLECTOR_START_TIME
-        if not COLLECTOR_START_TIME:
-            COLLECTOR_START_TIME = START_TIME
-        self.print("scrape_duration_seconds", value=(time.time() - COLLECTOR_START_TIME), collector=collector_name)
-        COLLECTOR_START_TIME = time.time()
+        if not self.COLLECTOR_START_TIME:
+            self.COLLECTOR_START_TIME = START_TIME
+        self.print("scrape_duration_seconds", value=(time.time() - self.COLLECTOR_START_TIME), collector=collector_name)
+        self.COLLECTOR_START_TIME = time.time()
 
     def terminate(self, msg: str = "", value: int = 0):
         """properly terminating the process execution on error."""
@@ -908,7 +908,6 @@ class Metrics:
 #################################################################################
 # FUNCTIONS
 #################################################################################
-COLLECTOR_START_TIME = False
 
 def load_toml(toml_file):
     """ Load a tmol file into nested dict"""
