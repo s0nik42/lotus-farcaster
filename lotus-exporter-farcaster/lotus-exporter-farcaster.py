@@ -881,30 +881,13 @@ def load_toml(toml_file):
     else:
         return nested_dict
 
-def main(miner_url, miner_token, daemon_url, daemon_token, farcaster_path):
-    """ main function """
+def run(addresses_config):
+    """ run metrics collection and export """
 
     global START_TIME, LOTUS_OBJ, METRICS_OBJ
 
-    # Start execution time mesurement
-    START_TIME = time.time()
-
-    # Create Metrics object
-    METRICS_OBJ = Metrics()
-
-    # Create Lotus object
-    try:
-        LOTUS_OBJ = Lotus(miner_url, miner_token, daemon_url, daemon_token)
-    except DaemonError as e_generic:
-        METRICS_OBJ.terminate(e_generic, -1)
-    except MinerError as e_generic:
-        METRICS_OBJ.terminate(e_generic, -2)
-
     # miner_id
     miner_id = LOTUS_OBJ.miner_id
-
-    # Load config file to retrieve external wallet and vlookup
-    addresses_config = load_toml(farcaster_path.joinpath("addresses.toml"))
 
     # Add KNOWN_ADDRESSES to Lotus OBJ
     if "known_addresses" in addresses_config.keys():
@@ -1272,12 +1255,10 @@ def get_api_and_token(api, path):
     url = f"{proto}://{addr}:{port}/rpc/v0"
     return (token, url)
 
-if __name__ == "__main__":
+def main():
+    """ main function """
 
-    # Declare Global Variables
-    START_TIME = None
-    LOTUS_OBJ = None
-    METRICS_OBJ = None
+    global START_TIME, LOTUS_OBJ, METRICS_OBJ
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
@@ -1300,5 +1281,31 @@ if __name__ == "__main__":
     except Exception  as e_generic:
         raise MinerError(e_generic)
 
-    # execute only if run as a script
-    main(miner_url, miner_token, daemon_url, daemon_token, farcaster_path=args.farcaster_path)
+    # Start execution time mesurement
+    START_TIME = time.time()
+
+    # Create Metrics object
+    METRICS_OBJ = Metrics()
+
+    # Create Lotus object
+    try:
+        LOTUS_OBJ = Lotus(miner_url, miner_token, daemon_url, daemon_token)
+    except DaemonError as e_generic:
+        METRICS_OBJ.terminate(e_generic, -1)
+    except MinerError as e_generic:
+        METRICS_OBJ.terminate(e_generic, -2)
+
+    # Load config file to retrieve external wallet and vlookup
+    addresses_config = load_toml(args.farcaster_path.joinpath("addresses.toml"))
+
+    # execute the collector
+    run(addresses_config)
+
+if __name__ == "__main__":
+
+    # Declare Global Variables
+    START_TIME = None
+    LOTUS_OBJ = None
+    METRICS_OBJ = None
+
+    main()
