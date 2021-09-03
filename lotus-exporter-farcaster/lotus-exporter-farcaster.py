@@ -444,14 +444,15 @@ class Lotus(object):
         quality = (scaled_up_weighted_sum_space_time / (sector_space_time * quality_base_multiplier))
         return int(size * quality) >> sector_quality_precision
 
-    def __get_actor_type(self, actor_code):
+    @classmethod
+    def __get_actor_type(cls, actor_code):
         try:
             a_type = multibase.decode(actor_code)[10:]
         except Exception:
             raise Exception(f'Cannot decode actor_code {actor_code}')
 
-        if a_type in self.actor_type.keys():
-            return self.actor_type[a_type]
+        if a_type in cls.actor_type.keys():
+            return cls.actor_type[a_type]
 
         raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
 
