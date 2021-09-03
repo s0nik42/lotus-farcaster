@@ -74,18 +74,8 @@ class MinerError(Exception):
 class DaemonError(Exception):
     """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
 
-class Lotus:
+class Lotus(object):
     """This class manages all interaction with lotus API miner and daemon"""
-    __tipset_key = None
-    __chain_head = None
-    __basefee = None
-    __local_wallet_list = None
-    miner_id = None
-    miner_url = None
-    daemon_url = None
-    miner_token = None
-    daemon_token = None
-    known_addresses = {}
 
     message_type = {"Account":
                         [
@@ -196,6 +186,17 @@ class Lotus:
     }
 
     def __init__(self, miner_url, miner_token, daemon_url, daemon_token):
+        self.__tipset_key = None
+        self.__chain_head = None
+        self.__basefee = None
+        self.__local_wallet_list = None
+        self.miner_id = None
+        self.miner_url = None
+        self.daemon_url = None
+        self.miner_token = None
+        self.daemon_token = None
+        self.known_addresses = {}
+
         self.miner_url = miner_url
         self.daemon_url = daemon_url
         self.miner_token = miner_token
