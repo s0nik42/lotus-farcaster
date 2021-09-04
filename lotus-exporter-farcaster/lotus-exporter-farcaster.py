@@ -94,6 +94,91 @@ class DaemonError(Error):
 class Lotus(object):
     """This class manages all interaction with lotus API miner and daemon"""
 
+    def __init__(self, miner_url, miner_token, daemon_url, daemon_token):
+        self.daemon = Daemon(daemon_url, daemon_token)
+        self.miner = Miner(miner_url, miner_token)
+
+        # RETRIEVE MINER ID
+        actoraddress = self.miner.get_json("ActorAddress", [])
+        self.miner_id = actoraddress['result']
+
+    def get_deadlines_enhanced(self):
+        return self.daemon.get_deadlines_enhanced(self.miner_id)
+
+    def get_deal_info_enhanced(self, deal_id):
+        return self.daemon.get_deal_info_enhanced(deal_id)
+
+    @staticmethod
+    def qa_power_for_weight(*args, **kwargs):
+        return LotusBase.qa_power_for_weight(*args, **kwargs)
+
+    def get_local_mpool_pending_enhanced(self):
+        return self.daemon.get_local_mpool_pending_enhanced(self.miner_id)
+
+    def add_known_addresses(self, *args, **kwargs):
+        return self.daemon.known_addresses().update(*args, **kwargs)
+
+    def get_storagelist_enhanced(self):
+        return self.miner.get_storagelist_enhanced()
+
+    def get_wallet_list_enhanced(self, external_wallets=None):
+        return self.daemon.get_wallet_list_enhanced(self.miner_id, external_wallets)
+
+    def get_market_info_enhanced(self):
+        return self.miner.get_market_info_enhanced()
+
+    def tipset_key(self):
+        return self.daemon.tipset_key()
+
+    def chain_head(self):
+        return self.daemon.chain_head()
+
+    def basefee(self):
+        return self.daemon.basefee()
+
+    # REQUEST FUNCTIONS
+    def daemon_get(self, *args, **kwargs):
+        """wrapper for daemon api call to manage errors in a metrics environment """
+
+        try:
+            return self.daemon.get_json(*args, **kwargs)
+        except Exception as e_generic:
+            METRICS_OBJ.terminate(e_generic)
+
+    def miner_get(self, *args, **kwargs):
+        """wrapper for miner api call to manage errors in a metrics environment """
+
+        try:
+            return self.miner.get_json(*args, **kwargs)
+        except Exception as e_generic:
+            METRICS_OBJ.terminate(e_generic)
+
+    def miner_get_multiple(self, *args, **kwargs):
+        """wrapper for miner api call to manage errors in a metrics environment """
+
+        try:
+            return self.miner.get_json_multiple(*args, **kwargs)
+        except Exception as e_generic:
+            METRICS_OBJ.terminate(e_generic)
+
+class LotusBase(object):
+    target = "lotus"
+    Error = Error
+
+    actor_type = {
+        b"system":           "System",
+        b"init":             "Init",
+        b"reward":           "Reward",
+        b"cron":             "Cron",
+        b"storagepower":     "StoragePower",
+        b"storagemarket":    "StorageMarket",
+        b"verifiedregistry": "VerifiedRegistry",
+        b"account":          "Account",
+        b"multisig":         "Multisig",
+        b"paymentchannel":   "PaymentChannel",
+        b"storageminer":     "StorageMiner"
+    }
+
     message_type = {"Account":
                         [
                             "Constructor",
@@ -188,68 +273,34 @@ class Lotus(object):
                             "RestoreBytes"]
                     }
 
-    actor_type = {
-        b"system":           "System",
-        b"init":             "Init",
-        b"reward":           "Reward",
-        b"cron":             "Cron",
-        b"storagepower":     "StoragePower",
-        b"storagemarket":    "StorageMarket",
-        b"verifiedregistry": "VerifiedRegistry",
-        b"account":          "Account",
-        b"multisig":         "Multisig",
-        b"paymentchannel":   "PaymentChannel",
-        b"storageminer":     "StorageMiner"
-    }
 
-    def __init__(self, miner_url, miner_token, daemon_url, daemon_token):
-        self.__tipset_key = None
-        self.__chain_head = None
-        self.__basefee = None
-        self.__local_wallet_list = None
-        self.miner_id = None
-        self.miner_url = None
-        self.daemon_url = None
-        self.miner_token = None
-        self.daemon_token = None
-        self.known_addresses = {}
+    def __init__(self, url, token):
+        self.url = url
+        self.token = token
 
-        self.miner_url = miner_url
-        self.daemon_url = daemon_url
-        self.miner_token = miner_token
-        self.daemon_token = daemon_token
-
-        # RETRIEVE MINER ID
-        actoraddress = self.miner_get_json("ActorAddress", [])
-        self.miner_id = actoraddress['result']
-
-    @DaemonError.wrap
-    def daemon_get_json(self, method, params):
+    @Error.wrap
+    def get_json(self, method, params):
         """Send a request to the daemon API / This function rely on the function that support async, but present a much simpler interface"""
-        result = self.daemon_get_json_multiple([[method, params]])[0]
+        result = self.get_json_multiple([[method, params]])[0]
         if "error" in result.keys():
-            raise DaemonError(f"\nTarget : daemon\nMethod : {method}\nParams : {params}\nResult : {result}")
+            raise DaemonError(f"\nTarget : {self.target}\nMethod : {method}\nParams : {params}\nResult : {result}")
         return result
 
-    @MinerError.wrap
-    def miner_get_json(self, method, params):
-        """Send a request to the miner API / This function rely on the function that support async, but present a much simpler interface"""
-        result = self.miner_get_json_multiple([[method, params]])[0]
-        if "error" in result.keys():
-            raise MinerError(f"\nTarget : miner\nMethod : {method}\nParams : {params}\nResult : {result}")
-        return result
-
-    @DaemonError.wrap
-    def daemon_get_json_multiple(self, requests):
+    @Error.wrap
+    def get_json_multiple(self, requests):
         """ Send multiple request in Async mode to the daemon API"""
-        return asyncio.run(self.__get_json_multiple(self.daemon_url, self.daemon_token, requests))
+        return asyncio.run(self.__get_json_multiple(self.url, self.token, requests))
 
-    @MinerError.wrap
-    def miner_get_json_multiple(self, requests):
-        """ Send multiple request in Async mode to the miner API"""
-        return asyncio.run(self.__get_json_multiple(self.miner_url, self.miner_token, requests))
+    @classmethod
+    async def __get_json_multiple(cls, url, token, requests):
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for request in requests:
+                tasks.append(asyncio.ensure_future(cls.__get_json(session, url, token, request)))
+            return await asyncio.gather(*tasks)
 
-    async def __get_json(self, session, url, token, request):
+    @staticmethod
+    async def __get_json(session, url, token, request):
         header = {'Authorization': 'Bearer ' + token}
         method = request[0]
         params = request[1]
@@ -257,13 +308,6 @@ class Lotus(object):
 
         async with session.post(url, json=jsondata, headers=header) as response:
             return await response.json(content_type=None)
-
-    async def __get_json_multiple(self, url, token, requests):
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-            for request in requests:
-                tasks.append(asyncio.ensure_future(self.__get_json(session, url, token, request)))
-            return await asyncio.gather(*tasks)
 
     @staticmethod
     def bitfield_count(bitfield):
@@ -314,7 +358,136 @@ class Lotus(object):
             sector_id += bitfield[i + 1]
         return target, count
 
-    def get_deadlines_enhanced(self):
+    @staticmethod
+    def qa_power_for_weight(size, duration, deal_weight, verified_weight):
+        """ Calculate the Quality adjusted power of a sector based on deals weight.
+            Lotus source reference : https://github.com/filecoin-project/specs-actors/blob/8e3ed3d4e3f127577248004c841a41557a91ced2/actors/builtin/miner/policy.go#L271
+        """
+        if duration == 0:
+            duration = 1
+
+        quality_base_multiplier = 10
+        deal_weight_multiplier = 10
+        verified_deal_weight_multiplier = 100
+        sector_quality_precision = 20
+
+        sector_space_time = size * duration
+        total_deal_space_time = deal_weight + verified_weight
+        weighted_base_space_time = (sector_space_time - total_deal_space_time) * quality_base_multiplier
+        weighted_deal_space_time = deal_weight * deal_weight_multiplier
+        weighted_verified_space_time = verified_weight * verified_deal_weight_multiplier
+        weighted_sum_space_time = weighted_base_space_time + weighted_deal_space_time + weighted_verified_space_time
+        scaled_up_weighted_sum_space_time = weighted_sum_space_time << sector_quality_precision
+
+        quality = (scaled_up_weighted_sum_space_time / (sector_space_time * quality_base_multiplier))
+        return int(size * quality) >> sector_quality_precision
+
+    @classmethod
+    def _get_actor_type(cls, actor_code):
+        try:
+            a_type = multibase.decode(actor_code)[10:]
+        except Exception:
+            raise Exception(f'Cannot decode actor_code {actor_code}')
+
+        if a_type in cls.actor_type.keys():
+            return cls.actor_type[a_type]
+
+        raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
+
+
+
+
+class Daemon(LotusBase):
+    target = "daemon"
+    Error = DaemonError
+
+    def chain_head(self):
+        """ Return chain_head is already retrieved or retrieve it for the chain"""
+        try:
+            return self.__chain_head
+        except AttributeError:
+            self.__chain_head = self.get_json("ChainHead", [])["result"]
+        return self.__chain_head
+
+    def tipset_key(self):
+        """ Return  tipset_key """
+        return self.chain_head()["Cids"]
+
+    def basefee(self):
+        """ Return basefee """
+        return self.chain_head()["Blocks"][0]["ParentBaseFee"]
+
+    def known_addresses(self):
+        try:
+            return self._known_addresses
+        except AttributeError:
+            self._known_addresses = {}
+        return self._known_addresses
+
+    def __address_lookup(self, addr):
+        """ The function lookup an address and return the corresponding name from the chain or from the know_addresses table"""
+        # Try the simplest case first, whatever we have is known
+        try:
+            return self.known_addresses()[addr]
+        except KeyError:
+            pass
+
+        name = None
+        # second character is 0, this is a short name
+        if len(addr) >= 2 and addr[1] == "0":
+            name, addr = addr, None
+            try:
+                actor = self.get_json("StateGetActor", [name, self.tipset_key()])["result"]["Code"]["/"]
+                assert self._get_actor_type(actor) == "Account" # break out of the try if false
+                addr = self.get_json("StateAccountKey", [addr, self.tipset_key()])["result"]
+            except:
+                pass
+
+        trunc_addr = addr[:5] + "..." + addr[-5:] if addr else None
+        if trunc_addr and not name:
+            # maybe the truncated address is known
+            name = self.known_addresses().get(trunc_addr)
+
+        if addr and not name:
+            try:
+                name = self.get_json("StateLookupID", [addr, self.tipset_key()])["result"]
+            except:
+                pass
+
+        # Use whatever we have at this point
+        addr = addr or name
+        name = name or trunc_addr
+
+        # Save for next time
+        self.known_addresses()[addr] = name
+        self.known_addresses()[name] = name
+        return name
+
+    def __get_message_type(self, address, method):
+        """ Return message_type of a given message.
+
+        The code is based from an extract from : https://github.com/filecoin-project/specs-actors/blob/7d06c2806ff09868abea9e267ead2ada8438e077/actors/builtin/methods.go"""
+
+        try:
+            actor = self.get_json("StateGetActor", [address, self.tipset_key()])
+        except Exception:
+            return("Invalid address", "Unknown")
+
+        code = actor["result"]["Code"]["/"]
+
+        try:
+            actor_type = self._get_actor_type(code)
+        except Exception:
+            return "Unknown", "Unknown"
+
+        try:
+            message_type = self.message_type[actor_type][method-1]
+        except (IndexError, KeyError):
+            return(actor_type, "Unknown")
+
+        return(actor_type, message_type)
+
+    def get_deadlines_enhanced(self, miner_id):
         """ Merge StateMinerDeadlines StateMinerDeadlines into an unique object with the list of sectors per deadline instead of the bitfield
         Structure is :
                 {
@@ -354,11 +527,11 @@ class Lotus(object):
 
 
         # get State of each deadlines
-        proven_deadlines = self.daemon_get_json("StateMinerDeadlines", [self.miner_id, self.tipset_key()])
+        proven_deadlines = self.get_json("StateMinerDeadlines", [miner_id, self.tipset_key()])
 
         # Init the structures that will contains all the deadlines information
         deadlines_info = {}
-        deadlines_info["cur"] = self.daemon_get_json("StateMinerProvingDeadline", [self.miner_id, self.tipset_key()])["result"]
+        deadlines_info["cur"] = self.get_json("StateMinerProvingDeadline", [miner_id, self.tipset_key()])["result"]
 
         number_of_dls = deadlines_info["cur"]["WPoStPeriodDeadlines"]
 
@@ -366,7 +539,7 @@ class Lotus(object):
         for c_dl in range(number_of_dls):
             dl_id = (deadlines_info["cur"]["Index"] + c_dl) % number_of_dls
 
-            partitions = self.daemon_get_json("StateMinerPartitions", [self.miner_id, dl_id, self.tipset_key()])
+            partitions = self.get_json("StateMinerPartitions", [miner_id, dl_id, self.tipset_key()])
             if partitions["result"]:
                 deadlines_info["deadlines"][dl_id] = {}
                 opened = deadlines_info["cur"]["Open"] + deadlines_info["cur"]["WPoStChallengeWindow"] * c_dl
@@ -398,7 +571,7 @@ class Lotus(object):
     def get_deal_info_enhanced(self, deal_id):
         """ Return deald information with lookup on addresses."""
         try:
-            deal_info = self.daemon_get_json("StateMarketStorageDeal", [deal_id, self.tipset_key()])["result"]
+            deal_info = self.get_json("StateMarketStorageDeal", [deal_id, self.tipset_key()])["result"]
         except Exception:
             deal = {
                 "Client": "unknown",
@@ -420,106 +593,6 @@ class Lotus(object):
             deal["Provider"] = self.__address_lookup(deal["Provider"])
         return deal
 
-    @staticmethod
-    def qa_power_for_weight(size, duration, deal_weight, verified_weight):
-        """ Calculate the Quality adjusted power of a sector based on deals weight.
-            Lotus source reference : https://github.com/filecoin-project/specs-actors/blob/8e3ed3d4e3f127577248004c841a41557a91ced2/actors/builtin/miner/policy.go#L271
-        """
-        if duration == 0:
-            duration = 1
-
-        quality_base_multiplier = 10
-        deal_weight_multiplier = 10
-        verified_deal_weight_multiplier = 100
-        sector_quality_precision = 20
-
-        sector_space_time = size * duration
-        total_deal_space_time = deal_weight + verified_weight
-        weighted_base_space_time = (sector_space_time - total_deal_space_time) * quality_base_multiplier
-        weighted_deal_space_time = deal_weight * deal_weight_multiplier
-        weighted_verified_space_time = verified_weight * verified_deal_weight_multiplier
-        weighted_sum_space_time = weighted_base_space_time + weighted_deal_space_time + weighted_verified_space_time
-        scaled_up_weighted_sum_space_time = weighted_sum_space_time << sector_quality_precision
-
-        quality = (scaled_up_weighted_sum_space_time / (sector_space_time * quality_base_multiplier))
-        return int(size * quality) >> sector_quality_precision
-
-    @classmethod
-    def __get_actor_type(cls, actor_code):
-        try:
-            a_type = multibase.decode(actor_code)[10:]
-        except Exception:
-            raise Exception(f'Cannot decode actor_code {actor_code}')
-
-        if a_type in cls.actor_type.keys():
-            return cls.actor_type[a_type]
-
-        raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
-
-
-    def __get_message_type(self, address, method):
-        """ Return message_type of a given message.
-
-        The code is based from an extract from : https://github.com/filecoin-project/specs-actors/blob/7d06c2806ff09868abea9e267ead2ada8438e077/actors/builtin/methods.go"""
-
-        try:
-            actor = self.daemon_get_json("StateGetActor", [address, self.tipset_key()])
-        except Exception:
-            return("Invalid address", "Unknown")
-
-        code = actor["result"]["Code"]["/"]
-
-        try:
-            actor_type = self.__get_actor_type(code)
-        except Exception:
-            return "Unknown", "Unknown"
-
-        try:
-            message_type = self.message_type[actor_type][method-1]
-        except IndexError:
-            return(actor_type, "Unknown")
-
-        return(actor_type, message_type)
-
-    def __address_lookup(self, addr):
-        """ The function lookup an address and return the corresponding name from the chain or from the know_addresses table"""
-        # Try the simplest case first, whatever we have is known
-        try:
-            return self.known_addresses[addr]
-        except KeyError:
-            pass
-
-        name = None
-        # second character is 0, this is a short name
-        if len(addr) >= 2 and addr[1] == "0":
-            name, addr = addr, None
-            try:
-                actor = self.daemon_get_json("StateGetActor", [name, self.tipset_key()])["result"]["Code"]["/"]
-                assert self.__get_actor_type(actor) == "Account" # break out of the try if false
-                addr = self.daemon_get_json("StateAccountKey", [addr, self.tipset_key()])["result"]
-            except:
-                pass
-
-        trunc_addr = addr[:5] + "..." + addr[-5:] if addr else None
-        if trunc_addr and not name:
-            # maybe the truncated address is known
-            name = self.known_addresses.get(trunc_addr)
-
-        if addr and not name:
-            try:
-                name = self.daemon_get_json("StateLookupID", [addr, self.tipset_key()])["result"]
-            except:
-                pass
-
-        # Use whatever we have at this point
-        addr = addr or name
-        name = name or trunc_addr
-
-        # Save for next time
-        self.known_addresses[addr] = name
-        self.known_addresses[name] = name
-        return name
-
     def get_mpool_pending_enhanced(self, filter_from_address: list = None):
         """ Return an enhanced version of mpool pending with additionnal information : lookup on address / Method Type / etc ...
 
@@ -527,7 +600,7 @@ class Lotus(object):
 
         msg_list = []
 
-        mpoolpending = self.daemon_get_json("MpoolPending", [self.tipset_key()])
+        mpoolpending = self.get_json("MpoolPending", [self.tipset_key()])
 
         # Go through all messages and add informations
         for msg in mpoolpending["result"]:
@@ -546,31 +619,100 @@ class Lotus(object):
 
         return msg_list
 
-    def get_local_mpool_pending_enhanced(self):
+    def __get_local_wallet_list(self):
+        """ retrieve local wallet list, return cache version if already executed """
+        try:
+            return self.__local_wallet_list
+        except AttributeError:
+            self.__local_wallet_list = self.get_json("WalletList", [])["result"]
+        return self.__local_wallet_list
+
+    def get_wallet_list_enhanced(self, miner_id, external_wallets=None):
+        """ return wallet enrich with addresses lookp and external wallet added"""
+
+        external_wallets = external_wallets or {}
+
+        res = {}
+
+        # 1 Add wallet adresses to the loop and manage the case where wallet adress doesnt exist onchain because never get any transaction
+        walletlist = self.__get_local_wallet_list()
+        for addr in walletlist:
+            try:
+                balance = self.get_json("WalletBalance", [addr])["result"]
+            except Exception as e_generic:
+                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
+                continue
+
+            # Add address to the list
+            res[addr] = {}
+            res[addr]["balance"] = balance
+            res[addr]["name"] = self.__address_lookup(addr)
+
+            try:
+                verified_result = self.get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
+                res[addr]["verified_datacap"] = verified_result["result"]
+            except Exception:
+                res[addr]["verified_datacap"] = 0
+
+        # 2 Add miner balance
+        res[miner_id] = {}
+        res[miner_id]["balance"] = self.get_json("StateMinerAvailableBalance", [miner_id, self.tipset_key()])["result"]
+        res[miner_id]["name"] = miner_id
+        res[miner_id]["verified_datacap"] = self.get_json("StateVerifiedClientStatus", [miner_id, self.tipset_key()])["result"]
+
+        # 3 Add external_wallets :
+        for addr in external_wallets:
+            try:
+                balance = self.get_json("WalletBalance", [addr])["result"]
+            except Exception as e_generic:
+                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
+                continue
+
+            # Add address to the list
+            res[addr] = {}
+            res[addr]["balance"] = balance
+            res[addr]["name"] = external_wallets[addr]
+
+            try:
+                verified_result = self.get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
+                res[addr]["verified_datacap"] = verified_result["result"]
+            except Exception:
+                res[addr]["verified_datacap"] = 0
+
+        return res
+
+    def get_local_mpool_pending_enhanced(self, miner_id):
         """ Return local mpool messages """
-        wallet_list = self.get_wallet_list_enhanced().keys()
+        wallet_list = self.get_wallet_list_enhanced(miner_id).keys()
         return self.get_mpool_pending_enhanced(wallet_list)
 
-    def add_known_addresses(self, addresses: dict):
-        """ Add new addresses to the vlookup database"""
-        self.known_addresses.update(addresses)
+class Miner(LotusBase):
+    target = "miner"
+    Error = MinerError
 
-    def get_chain_head(self):
-        """  Update Object content with last head info"""
-        chain_head = self.daemon_get_json("ChainHead", [])
-        self.__chain_head = chain_head["result"]
-        self.__tipset_key = chain_head["result"]["Cids"]
-        self.__basefee = chain_head["result"]["Blocks"][0]["ParentBaseFee"]
+    def get_market_info_enhanced(self):
+        """ create one structure with all the info related to storage and retreival market """
+        res = {}
+
+        res["storage"] = self.get_json("MarketGetAsk", [])["result"]["Ask"]
+        res["storage"]["ConsiderOnlineDeals"] = self.get_json("DealsConsiderOnlineStorageDeals", [])["result"]
+        res["storage"]["ConsiderOfflineDeals"] = self.get_json("DealsConsiderOfflineStorageDeals", [])["result"]
+
+        res["retrieval"] = self.get_json("MarketGetRetrievalAsk", [])["result"]
+        res["retrieval"]["ConsiderOnlineDeals"] = self.get_json("DealsConsiderOnlineRetrievalDeals", [])["result"]
+        res["retrieval"]["ConsiderOfflineDeals"] = self.get_json("DealsConsiderOfflineRetrievalDeals", [])["result"]
+
+        return res
 
     def get_storagelist_enhanced(self):
         """ Get storage list enhanced with reverse hostname lookup"""
 
-        storage_list = self.miner_get_json("StorageList", [])
+        storage_list = self.get_json("StorageList", [])
 
-        storage_local_list = self.miner_get_json("StorageLocal", [])
+        storage_local_list = self.get_json("StorageLocal", [])
         res = []
         for storage in storage_list["result"].keys():
-            storage_info = self.miner_get_json("StorageInfo", [storage])
+            storage_info = self.get_json("StorageInfo", [storage])
 
             sto = {}
             if storage in storage_local_list["result"].keys():
@@ -591,7 +733,7 @@ class Lotus(object):
             sto["can_seal"] = storage_info["result"]["CanSeal"]
             sto["can_store"] = storage_info["result"]["CanStore"]
             try:
-                storage_stat = self.miner_get_json("StorageStat", [storage])
+                storage_stat = self.get_json("StorageStat", [storage])
             except Exception:
                 sto["capacity"] = 0
                 sto["available"] = 0
@@ -602,136 +744,6 @@ class Lotus(object):
                 sto["reserved"] = storage_stat["result"]["Reserved"]
             res.append(sto)
         return res
-
-
-    def __get_local_wallet_list(self):
-        """ retrieve local wallet list, return cache version if already executed """
-        if self.__local_wallet_list is None:
-            self.__local_wallet_list = self.daemon_get_json("WalletList", [])["result"]
-        return self.__local_wallet_list
-
-    def get_wallet_list_enhanced(self, external_wallets=None):
-        """ return wallet enrich with addresses lookp and external wallet added"""
-
-        external_wallets = external_wallets or {}
-
-        res = {}
-
-        # 1 Add wallet adresses to the loop and manage the case where wallet adress doesnt exist onchain because never get any transaction
-        walletlist = self.__get_local_wallet_list()
-        for addr in walletlist:
-            try:
-                balance = self.daemon_get_json("WalletBalance", [addr])["result"]
-            except Exception as e_generic:
-                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
-                continue
-
-            # Add address to the list
-            res[addr] = {}
-            res[addr]["balance"] = balance
-            res[addr]["name"] = self.__address_lookup(addr)
-
-            try:
-                verified_result = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
-                res[addr]["verified_datacap"] = verified_result["result"]
-            except Exception:
-                res[addr]["verified_datacap"] = 0
-
-        # 2 Add miner balance
-        res[self.miner_id] = {}
-        res[self.miner_id]["balance"] = self.daemon_get_json("StateMinerAvailableBalance", [self.miner_id, self.tipset_key()])["result"]
-        res[self.miner_id]["name"] = self.miner_id
-        res[self.miner_id]["verified_datacap"] = self.daemon_get_json("StateVerifiedClientStatus", [self.miner_id, self.tipset_key()])["result"]
-
-        # 3 Add external_wallets :
-        for addr in external_wallets:
-            try:
-                balance = self.daemon_get_json("WalletBalance", [addr])["result"]
-            except Exception as e_generic:
-                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
-                continue
-
-            # Add address to the list
-            res[addr] = {}
-            res[addr]["balance"] = balance
-            res[addr]["name"] = external_wallets[addr]
-
-            try:
-                verified_result = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
-                res[addr]["verified_datacap"] = verified_result["result"]
-            except Exception:
-                res[addr]["verified_datacap"] = 0
-
-        return res
-
-    def get_market_info_enhanced(self):
-        """ create one structure with all the info related to storage and retreival market """
-        res = {}
-
-        res["storage"] = self.miner_get_json("MarketGetAsk", [])["result"]["Ask"]
-        res["storage"]["ConsiderOnlineDeals"] = self.miner_get_json("DealsConsiderOnlineStorageDeals", [])["result"]
-        res["storage"]["ConsiderOfflineDeals"] = self.miner_get_json("DealsConsiderOfflineStorageDeals", [])["result"]
-
-        res["retrieval"] = self.miner_get_json("MarketGetRetrievalAsk", [])["result"]
-        res["retrieval"]["ConsiderOnlineDeals"] = self.miner_get_json("DealsConsiderOnlineRetrievalDeals", [])["result"]
-        res["retrieval"]["ConsiderOfflineDeals"] = self.miner_get_json("DealsConsiderOfflineRetrievalDeals", [])["result"]
-
-        return res
-
-    def tipset_key(self):
-        """ Return  tipset_key is already retrieved or retrieve it for the chain"""
-        if  self.__tipset_key is None:
-            self.get_chain_head()
-        return self.__tipset_key
-
-    def chain_head(self):
-        """ Return chain_head is already retrieved or retrieve it for the chain"""
-        if  self.__chain_head is None:
-            self.get_chain_head()
-        return self.__chain_head
-
-    def basefee(self):
-        """ Return basefee is already retrieved or retrieve it for the chain"""
-        if  self.__basefee is None:
-            self.get_chain_head()
-        return self.__basefee
-
-    # REQUEST FUNCTIONS
-    def daemon_get(self, method, params):
-        """wrapper for daemon api call to manage errors in a metrics environment """
-
-        try:
-            result = self.daemon_get_json(method, params)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
-        return result
-
-    def miner_get(self, method, params):
-        """wrapper for miner api call to manage errors in a metrics environment """
-
-        try:
-            result = self.miner_get_json(method, params)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
-        return result
-
-    def daemon_get_multiple(self, requests):
-        """wrapper for daemon api call to manage errors in a metrics environment """
-
-        try:
-            results = self.daemon_get_json_multiple(requests)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
-        return results
-
-    def miner_get_multiple(self, requests):
-        """wrapper for miner api call to manage errors in a metrics environment """
-
-        try:
-            results = self.miner_get_json_multiple(requests)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
-        return results
 
 class Metrics:
     """ This class manage prometheus metrics formatting / checking / print """
