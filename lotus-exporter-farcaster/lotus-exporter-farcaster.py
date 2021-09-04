@@ -483,42 +483,41 @@ class Lotus(object):
 
     def __address_lookup(self, addr):
         """ The function lookup an address and return the corresponding name from the chain or from the know_addresses table"""
+        # Try the simplest case first, whatever we have is known
+        try:
+            return self.known_addresses[addr]
+        except KeyError:
+            pass
 
-        # Check if it's an address or a name. And reallocate the data accordingly
-        if addr.startswith("f0"):
-            name = addr
-
-            # Retrieve actor type
+        name = None
+        # second character is 0, this is a short name
+        if len(addr) >= 2 and addr[1] == "0":
+            name, addr = addr, None
             try:
                 actor = self.daemon_get_json("StateGetActor", [name, self.tipset_key()])["result"]["Code"]["/"]
-            except Exception:
-                return name
+                assert self.__get_actor_type(actor) == "Account" # break out of the try if false
+                addr = self.daemon_get_json("StateAccountKey", [addr, self.tipset_key()])["result"]
+            except:
+                pass
 
-            # If Address is an account type
-            if self.__get_actor_type(actor) == "Account":
-                try:
-                    addr = self.daemon_get_json("StateAccountKey", [name, self.tipset_key()])["result"]
-                except Exception:
-                    addr = name
-            else:
-                addr = name
-        else:
-            # Enter here if addr is really an address
+        trunc_addr = addr[:5] + "..." + addr[-5:] if addr else None
+        if trunc_addr and not name:
+            # maybe the truncated address is known
+            name = self.known_addresses.get(trunc_addr)
+
+        if addr and not name:
             try:
                 name = self.daemon_get_json("StateLookupID", [addr, self.tipset_key()])["result"]
-            except Exception:
-                name = addr[0:5] + "..." + addr[-5:]
+            except:
+                pass
 
-        # AT THAT POINT we have a name and an adress
+        # Use whatever we have at this point
+        addr = addr or name
+        name = name or trunc_addr
 
-        # Return the name based on the following priority
-        # If in the known address table
-        if name in self.known_addresses:
-            return self.known_addresses[name]
-
-        if addr in self.known_addresses:
-            return self.known_addresses[addr]
-
+        # Save for next time
+        self.known_addresses[addr] = name
+        self.known_addresses[name] = name
         return name
 
     def get_mpool_pending_enhanced(self, filter_from_address: list = None):
