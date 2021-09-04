@@ -98,12 +98,8 @@ class Lotus(object):
         self.daemon = Daemon(daemon_url, daemon_token)
         self.miner = Miner(miner_url, miner_token)
 
-        # RETRIEVE MINER ID
-        actoraddress = self.miner.get_json("ActorAddress", [])
-        self.miner_id = actoraddress['result']
-
     def get_deadlines_enhanced(self):
-        return self.daemon.get_deadlines_enhanced(self.miner_id)
+        return self.daemon.get_deadlines_enhanced(self.miner.id())
 
     def get_deal_info_enhanced(self, deal_id):
         return self.daemon.get_deal_info_enhanced(deal_id)
@@ -113,7 +109,7 @@ class Lotus(object):
         return LotusBase.qa_power_for_weight(*args, **kwargs)
 
     def get_local_mpool_pending_enhanced(self):
-        return self.daemon.get_local_mpool_pending_enhanced(self.miner_id)
+        return self.daemon.get_local_mpool_pending_enhanced(self.miner.id())
 
     def add_known_addresses(self, *args, **kwargs):
         return self.daemon.known_addresses().update(*args, **kwargs)
@@ -122,7 +118,7 @@ class Lotus(object):
         return self.miner.get_storagelist_enhanced()
 
     def get_wallet_list_enhanced(self, external_wallets=None):
-        return self.daemon.get_wallet_list_enhanced(self.miner_id, external_wallets)
+        return self.daemon.get_wallet_list_enhanced(self.miner.id(), external_wallets)
 
     def get_market_info_enhanced(self):
         return self.miner.get_market_info_enhanced()
@@ -690,6 +686,15 @@ class Miner(LotusBase):
     target = "miner"
     Error = MinerError
 
+    def id(self):
+        try:
+            return self.miner_id
+        except AttributeError:
+            # RETRIEVE MINER ID
+            actoraddress = self.get_json("ActorAddress", [])
+            self.miner_id = actoraddress['result']
+        return self.miner_id
+
     def get_market_info_enhanced(self):
         """ create one structure with all the info related to storage and retreival market """
         res = {}
@@ -899,7 +904,7 @@ def run(lotus, metrics, addresses_config):
     global START_TIME
 
     # miner_id
-    miner_id = lotus.miner_id
+    miner_id = lotus.miner.id()
 
     # Add KNOWN_ADDRESSES to Lotus OBJ
     if "known_addresses" in addresses_config.keys():
@@ -927,7 +932,7 @@ def run(lotus, metrics, addresses_config):
     metrics.checkpoint("Miner")
 
     # RETRIEVE MAIN ADDRESSES
-    daemon_stats = lotus.daemon_get("StateMinerInfo", [lotus.miner_id, lotus.tipset_key()])
+    daemon_stats = lotus.daemon_get("StateMinerInfo", [miner_id, lotus.tipset_key()])
     miner_owner = daemon_stats["result"]["Owner"]
     miner_owner_addr = lotus.daemon_get("StateAccountKey", [miner_owner, lotus.tipset_key()])["result"]
     miner_worker = daemon_stats["result"]["Worker"]
@@ -969,20 +974,20 @@ def run(lotus, metrics, addresses_config):
             metrics.print("wallet_verified_datacap", value=walletlist[addr]["verified_datacap"], miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
 
     # Retrieve locked funds balance
-    locked_funds = lotus.daemon_get("StateReadState", [lotus.miner_id, lotus.tipset_key()])
+    locked_funds = lotus.daemon_get("StateReadState", [miner_id, lotus.tipset_key()])
     for i in ["PreCommitDeposits", "LockedFunds", "FeeDebt", "InitialPledge"]:
-        metrics.print("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=lotus.miner_id, locked_type=i)
+        metrics.print("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=miner_id, locked_type=i)
     metrics.checkpoint("Balances")
 
     # GENERATE POWER
-    powerlist = lotus.daemon_get("StateMinerPower", [lotus.miner_id, lotus.tipset_key()])
+    powerlist = lotus.daemon_get("StateMinerPower", [miner_id, lotus.tipset_key()])
     for minerpower in powerlist["result"]["MinerPower"]:
         metrics.print("power", value=powerlist["result"]["MinerPower"][minerpower], miner_id=miner_id, scope="miner", power_type=minerpower)
     for totalpower in powerlist["result"]["TotalPower"]:
         metrics.print("power", value=powerlist["result"]["TotalPower"][totalpower], miner_id=miner_id, scope="network", power_type=totalpower)
 
     # Mining eligibility
-    base_info = lotus.daemon_get("MinerGetBaseInfo", [lotus.miner_id, lotus.chain_head()["Height"], lotus.tipset_key()])
+    base_info = lotus.daemon_get("MinerGetBaseInfo", [miner_id, lotus.chain_head()["Height"], lotus.tipset_key()])
 
     if base_info["result"] is None:
         logging.error(f'MinerGetBaseInfo returned no result')
