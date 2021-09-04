@@ -893,48 +893,48 @@ def load_toml(toml_file):
     else:
         return nested_dict
 
-def run(addresses_config):
+def run(lotus, metrics, addresses_config):
     """ run metrics collection and export """
 
-    global START_TIME, LOTUS_OBJ, METRICS_OBJ
+    global START_TIME
 
     # miner_id
-    miner_id = LOTUS_OBJ.miner_id
+    miner_id = lotus.miner_id
 
     # Add KNOWN_ADDRESSES to Lotus OBJ
     if "known_addresses" in addresses_config.keys():
-        LOTUS_OBJ.add_known_addresses(addresses_config["known_addresses"])
+        lotus.add_known_addresses(addresses_config["known_addresses"])
 
-    METRICS_OBJ.print("chain_basefee", value=LOTUS_OBJ.basefee(), miner_id=miner_id)
+    metrics.print("chain_basefee", value=lotus.basefee(), miner_id=miner_id)
 
     # CHAIN HEIGHT
-    METRICS_OBJ.print("chain_height", value=LOTUS_OBJ.chain_head()["Height"], miner_id=miner_id)
-    METRICS_OBJ.checkpoint("ChainHead")
+    metrics.print("chain_height", value=lotus.chain_head()["Height"], miner_id=miner_id)
+    metrics.checkpoint("ChainHead")
 
     # GENERATE CHAIN SYNC STATUS
-    sync_status = LOTUS_OBJ.daemon_get("SyncState", [])
+    sync_status = lotus.daemon_get("SyncState", [])
     for worker in sync_status["result"]["ActiveSyncs"]:
         try:
             diff_height = worker["Target"]["Height"] - worker["Base"]["Height"]
         except Exception:
             diff_height = -1
-        METRICS_OBJ.print("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
-        METRICS_OBJ.print("chain_sync_status", value=worker["Stage"], miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
-    METRICS_OBJ.checkpoint("ChainSync")
+        metrics.print("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
+        metrics.print("chain_sync_status", value=worker["Stage"], miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
+    metrics.checkpoint("ChainSync")
 
     # GENERATE MINER INFO
-    miner_version = LOTUS_OBJ.miner_get("Version", [])
-    METRICS_OBJ.checkpoint("Miner")
+    miner_version = lotus.miner_get("Version", [])
+    metrics.checkpoint("Miner")
 
     # RETRIEVE MAIN ADDRESSES
-    daemon_stats = LOTUS_OBJ.daemon_get("StateMinerInfo", [LOTUS_OBJ.miner_id, LOTUS_OBJ.tipset_key()])
+    daemon_stats = lotus.daemon_get("StateMinerInfo", [lotus.miner_id, lotus.tipset_key()])
     miner_owner = daemon_stats["result"]["Owner"]
-    miner_owner_addr = LOTUS_OBJ.daemon_get("StateAccountKey", [miner_owner, LOTUS_OBJ.tipset_key()])["result"]
+    miner_owner_addr = lotus.daemon_get("StateAccountKey", [miner_owner, lotus.tipset_key()])["result"]
     miner_worker = daemon_stats["result"]["Worker"]
-    miner_worker_addr = LOTUS_OBJ.daemon_get("StateAccountKey", [miner_worker, LOTUS_OBJ.tipset_key()])["result"]
+    miner_worker_addr = lotus.daemon_get("StateAccountKey", [miner_worker, lotus.tipset_key()])["result"]
 
     # Add miner addresses to known_addresses lookup table
-    LOTUS_OBJ.add_known_addresses({miner_owner: "Local Owner", miner_owner_addr: "Local Owner", miner_worker: "Local Worker", miner_worker_addr: "Local Worker"})
+    lotus.add_known_addresses({miner_owner: "Local Owner", miner_owner_addr: "Local Owner", miner_worker: "Local Worker", miner_worker_addr: "Local Worker"})
 
     try:
         miner_control0 = daemon_stats["result"]["ControlAddresses"][0]
@@ -942,104 +942,104 @@ def run(addresses_config):
         miner_control0 = miner_worker
     else:
         # Add miner addresses to known_addresses lookup table
-        LOTUS_OBJ.add_known_addresses({miner_control0: "Local control0"})
+        lotus.add_known_addresses({miner_control0: "Local control0"})
 
-    miner_control0_addr = LOTUS_OBJ.daemon_get("StateAccountKey", [miner_control0, LOTUS_OBJ.tipset_key()])["result"]
+    miner_control0_addr = lotus.daemon_get("StateAccountKey", [miner_control0, lotus.tipset_key()])["result"]
 
-    METRICS_OBJ.print("miner_info", value=1, miner_id=miner_id, version=miner_version["result"]["Version"], owner=miner_owner, owner_addr=miner_owner_addr, worker=miner_worker, worker_addr=miner_worker_addr, control0=miner_control0, control0_addr=miner_control0_addr)
-    METRICS_OBJ.print("miner_info_sector_size", value=daemon_stats["result"]["SectorSize"], miner_id=miner_id)
-    METRICS_OBJ.checkpoint("StateMinerInfo")
+    metrics.print("miner_info", value=1, miner_id=miner_id, version=miner_version["result"]["Version"], owner=miner_owner, owner_addr=miner_owner_addr, worker=miner_worker, worker_addr=miner_worker_addr, control0=miner_control0, control0_addr=miner_control0_addr)
+    metrics.print("miner_info_sector_size", value=daemon_stats["result"]["SectorSize"], miner_id=miner_id)
+    metrics.checkpoint("StateMinerInfo")
 
     # GENERATE DAEMON INFO
-    daemon_network = LOTUS_OBJ.daemon_get("StateNetworkName", [])
-    daemon_network_version = LOTUS_OBJ.daemon_get("StateNetworkVersion", [LOTUS_OBJ.tipset_key()])
-    daemon_version = LOTUS_OBJ.daemon_get("Version", [])
-    METRICS_OBJ.print("info", value=daemon_network_version["result"], miner_id=miner_id, version=daemon_version["result"]["Version"], network=daemon_network["result"])
-    METRICS_OBJ.checkpoint("Daemon")
+    daemon_network = lotus.daemon_get("StateNetworkName", [])
+    daemon_network_version = lotus.daemon_get("StateNetworkVersion", [lotus.tipset_key()])
+    daemon_version = lotus.daemon_get("Version", [])
+    metrics.print("info", value=daemon_network_version["result"], miner_id=miner_id, version=daemon_version["result"]["Version"], network=daemon_network["result"])
+    metrics.checkpoint("Daemon")
 
     # GENERATE WALLET
     if "external_wallets" in addresses_config:
-        walletlist = LOTUS_OBJ.get_wallet_list_enhanced(addresses_config["external_wallets"])
+        walletlist = lotus.get_wallet_list_enhanced(addresses_config["external_wallets"])
     else:
-        walletlist = LOTUS_OBJ.get_wallet_list_enhanced()
+        walletlist = lotus.get_wallet_list_enhanced()
 
     for addr in walletlist.keys():
-        METRICS_OBJ.print("wallet_balance", value=int(walletlist[addr]["balance"])/1000000000000000000, miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
+        metrics.print("wallet_balance", value=int(walletlist[addr]["balance"])/1000000000000000000, miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
         if walletlist[addr]["verified_datacap"] is not None:
-            METRICS_OBJ.print("wallet_verified_datacap", value=walletlist[addr]["verified_datacap"], miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
+            metrics.print("wallet_verified_datacap", value=walletlist[addr]["verified_datacap"], miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
 
     # Retrieve locked funds balance
-    locked_funds = LOTUS_OBJ.daemon_get("StateReadState", [LOTUS_OBJ.miner_id, LOTUS_OBJ.tipset_key()])
+    locked_funds = lotus.daemon_get("StateReadState", [lotus.miner_id, lotus.tipset_key()])
     for i in ["PreCommitDeposits", "LockedFunds", "FeeDebt", "InitialPledge"]:
-        METRICS_OBJ.print("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=LOTUS_OBJ.miner_id, locked_type=i)
-    METRICS_OBJ.checkpoint("Balances")
+        metrics.print("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=lotus.miner_id, locked_type=i)
+    metrics.checkpoint("Balances")
 
     # GENERATE POWER
-    powerlist = LOTUS_OBJ.daemon_get("StateMinerPower", [LOTUS_OBJ.miner_id, LOTUS_OBJ.tipset_key()])
+    powerlist = lotus.daemon_get("StateMinerPower", [lotus.miner_id, lotus.tipset_key()])
     for minerpower in powerlist["result"]["MinerPower"]:
-        METRICS_OBJ.print("power", value=powerlist["result"]["MinerPower"][minerpower], miner_id=miner_id, scope="miner", power_type=minerpower)
+        metrics.print("power", value=powerlist["result"]["MinerPower"][minerpower], miner_id=miner_id, scope="miner", power_type=minerpower)
     for totalpower in powerlist["result"]["TotalPower"]:
-        METRICS_OBJ.print("power", value=powerlist["result"]["TotalPower"][totalpower], miner_id=miner_id, scope="network", power_type=totalpower)
+        metrics.print("power", value=powerlist["result"]["TotalPower"][totalpower], miner_id=miner_id, scope="network", power_type=totalpower)
 
     # Mining eligibility
-    base_info = LOTUS_OBJ.daemon_get("MinerGetBaseInfo", [LOTUS_OBJ.miner_id, LOTUS_OBJ.chain_head()["Height"], LOTUS_OBJ.tipset_key()])
+    base_info = lotus.daemon_get("MinerGetBaseInfo", [lotus.miner_id, lotus.chain_head()["Height"], lotus.tipset_key()])
 
     if base_info["result"] is None:
         logging.error(f'MinerGetBaseInfo returned no result')
         logging.info(f'KNOWN_REASON your miner needs to have a power >0 for Farcaster to work. Its linked to a Lotus API bug)')
         logging.info(f'SOLUTION restart your miner and node')
-        METRICS_OBJ.print("scrape_execution_succeed", value=0)
+        metrics.print("scrape_execution_succeed", value=0)
         sys.exit(0)
 
     if base_info["result"]["EligibleForMining"]:
         eligibility = 1
     else:
         eligibility = 0
-    METRICS_OBJ.print("power_mining_eligibility", value=eligibility, miner_id=miner_id)
-    METRICS_OBJ.checkpoint("Power")
+    metrics.print("power_mining_eligibility", value=eligibility, miner_id=miner_id)
+    metrics.checkpoint("Power")
 
     # GENERATE MPOOL
-    mpool_total = len(LOTUS_OBJ.daemon_get("MpoolPending", [LOTUS_OBJ.tipset_key()])["result"])
-    local_mpool = LOTUS_OBJ.get_local_mpool_pending_enhanced()
+    mpool_total = len(lotus.daemon_get("MpoolPending", [lotus.tipset_key()])["result"])
+    local_mpool = lotus.get_local_mpool_pending_enhanced()
     local_mpool_total = len(local_mpool)
 
-    METRICS_OBJ.print("mpool_total", value=mpool_total, miner_id=miner_id)
-    METRICS_OBJ.print("mpool_local_total", value=local_mpool_total, miner_id=miner_id)
+    metrics.print("mpool_total", value=mpool_total, miner_id=miner_id)
+    metrics.print("mpool_local_total", value=local_mpool_total, miner_id=miner_id)
 
     for msg in local_mpool:
-        METRICS_OBJ.print("mpool_local_message", value=1, miner_id=miner_id, msg_from=msg["display_from"], msg_to=msg["display_to"], msg_nonce=msg["Nonce"], msg_value=msg["Value"], msg_gaslimit=msg["GasLimit"], msg_gasfeecap=msg["GasFeeCap"], msg_gaspremium=msg["GasPremium"], msg_method=msg["Method"], msg_method_type=msg["method_type"], msg_to_actor_type=msg["actor_type"])
-    METRICS_OBJ.checkpoint("MPool")
+        metrics.print("mpool_local_message", value=1, miner_id=miner_id, msg_from=msg["display_from"], msg_to=msg["display_to"], msg_nonce=msg["Nonce"], msg_value=msg["Value"], msg_gaslimit=msg["GasLimit"], msg_gasfeecap=msg["GasFeeCap"], msg_gaspremium=msg["GasPremium"], msg_method=msg["Method"], msg_method_type=msg["method_type"], msg_to_actor_type=msg["actor_type"])
+    metrics.checkpoint("MPool")
 
     # GENERATE NET_PEERS
-    daemon_netpeers = LOTUS_OBJ.daemon_get("NetPeers", [])
-    METRICS_OBJ.print("netpeers_total", value=len(daemon_netpeers["result"]), miner_id=miner_id)
+    daemon_netpeers = lotus.daemon_get("NetPeers", [])
+    metrics.print("netpeers_total", value=len(daemon_netpeers["result"]), miner_id=miner_id)
 
-    miner_netpeers = LOTUS_OBJ.miner_get("NetPeers", [])
-    METRICS_OBJ.print("miner_netpeers_total", value=len(miner_netpeers["result"]), miner_id=miner_id)
-    METRICS_OBJ.checkpoint("NetPeers")
+    miner_netpeers = lotus.miner_get("NetPeers", [])
+    metrics.print("miner_netpeers_total", value=len(miner_netpeers["result"]), miner_id=miner_id)
+    metrics.checkpoint("NetPeers")
 
     # GENERATE NETSTATS XXX Verfier la qualité des stats ... lotus net, API et Grafana sont tous differents
-    protocols_list = LOTUS_OBJ.daemon_get("NetBandwidthStatsByProtocol", [])
+    protocols_list = lotus.daemon_get("NetBandwidthStatsByProtocol", [])
     for protocol in protocols_list["result"]:
-        METRICS_OBJ.print("net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
-        METRICS_OBJ.print("net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
+        metrics.print("net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
+        metrics.print("net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
 
-    protocols_list = LOTUS_OBJ.miner_get("NetBandwidthStatsByProtocol", [])
+    protocols_list = lotus.miner_get("NetBandwidthStatsByProtocol", [])
     for protocol in protocols_list["result"]:
-        METRICS_OBJ.print("miner_net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
-        METRICS_OBJ.print("miner_net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
+        metrics.print("miner_net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
+        metrics.print("miner_net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
 
-    net_list = LOTUS_OBJ.daemon_get("NetBandwidthStats", [])
-    METRICS_OBJ.print("net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
-    METRICS_OBJ.print("net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
+    net_list = lotus.daemon_get("NetBandwidthStats", [])
+    metrics.print("net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
+    metrics.print("net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
 
-    net_list = LOTUS_OBJ.miner_get("NetBandwidthStats", [])
-    METRICS_OBJ.print("miner_net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
-    METRICS_OBJ.print("miner_net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
-    METRICS_OBJ.checkpoint("NetBandwidth")
+    net_list = lotus.miner_get("NetBandwidthStats", [])
+    metrics.print("miner_net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
+    metrics.print("miner_net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
+    metrics.checkpoint("NetBandwidth")
 
     # GENERATE WORKER INFOS
-    workerstats = LOTUS_OBJ.miner_get("WorkerStats", [])
+    workerstats = lotus.miner_get("WorkerStats", [])
     # XXX 1.2.1 introduce a new worker_id format. Later we should delete it, its a useless info.
     #print("# HELP lotus_miner_worker_id All lotus worker information prfer to use workername than workerid which is changing at each restart")
     #print("# TYPE lotus_miner_worker_id gauge")
@@ -1065,19 +1065,19 @@ def run(addresses_config):
         if worker_host not in worker_list.keys():
             worker_list[worker_host] = 1
 
-            METRICS_OBJ.print("miner_worker_cpu", value=cpus, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_gpu", value=gpus, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_mem_physical", value=mem_physical, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_mem_swap", value=mem_swap, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_mem_physical_used", value=mem_used_min, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_mem_vmem_used", value=mem_used_max, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
-            METRICS_OBJ.print("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
-    METRICS_OBJ.checkpoint("Workers")
+            metrics.print("miner_worker_cpu", value=cpus, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_gpu", value=gpus, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_mem_physical", value=mem_physical, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_mem_swap", value=mem_swap, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_mem_physical_used", value=mem_used_min, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_mem_vmem_used", value=mem_used_max, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
+            metrics.print("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
+    metrics.checkpoint("Workers")
 
     # GENERATE JOB INFOS
-    workerjobs = LOTUS_OBJ.miner_get("WorkerJobs", [])
+    workerjobs = lotus.miner_get("WorkerJobs", [])
     for (wrk, job_list) in workerjobs["result"].items():
         for job in job_list:
             job_id = job['ID']['ID']
@@ -1092,21 +1092,21 @@ def run(addresses_config):
             job_start_time = str(job['Start'])
             run_wait = str(job['RunWait'])
             job_start_epoch = time.mktime(time.strptime(job_start_time[:19], '%Y-%m-%dT%H:%M:%S'))
-            METRICS_OBJ.print("miner_worker_job", value=(START_TIME - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
-    METRICS_OBJ.checkpoint("Jobs")
+            metrics.print("miner_worker_job", value=(START_TIME - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
+    metrics.checkpoint("Jobs")
 
     # GENERATE JOB SCHEDDIAG
-    scheddiag = LOTUS_OBJ.miner_get("SealingSchedDiag", [True])
+    scheddiag = lotus.miner_get("SealingSchedDiag", [True])
 
     if scheddiag["result"]["SchedInfo"]["Requests"]:
         for req in scheddiag["result"]["SchedInfo"]["Requests"]:
             sector = req["Sector"]["Number"]
             task = req["TaskType"]
-            METRICS_OBJ.print("miner_worker_job", miner_id=miner_id, job_id="", worker="", task=task, sector_id=sector, start="", run_wait="99")
-    METRICS_OBJ.checkpoint("SchedDiag")
+            metrics.print("miner_worker_job", miner_id=miner_id, job_id="", worker="", task=task, sector_id=sector, start="", run_wait="99")
+    metrics.checkpoint("SchedDiag")
 
     # GENERATE SECTORS
-    sector_list = LOTUS_OBJ.miner_get("SectorsList", [])
+    sector_list = lotus.miner_get("SectorsList", [])
 
     # remove duplicate sector ID (lotus bug)
     unique_sector_list = set(sector_list["result"])
@@ -1120,7 +1120,7 @@ def run(addresses_config):
     for sector in unique_sector_list:
         request_list.append(["SectorsStatus", [sector, True]])
     # We execute the batch
-    details = LOTUS_OBJ.miner_get_multiple(request_list)
+    details = lotus.miner_get_multiple(request_list)
 
     # We go though all sectors and enhanced them
     for i, sector in enumerate(unique_sector_list):
@@ -1134,7 +1134,7 @@ def run(addresses_config):
             duration = int(detail["result"]["Expiration"]) - int(detail["result"]["Activation"])
             verified_weight = int(detail["result"]["VerifiedDealWeight"])
             deal_weight = int(detail["result"]["DealWeight"])
-            qa_power = LOTUS_OBJ.qa_power_for_weight(size, duration, deal_weight, verified_weight)
+            qa_power = lotus.qa_power_for_weight(size, duration, deal_weight, verified_weight)
 
         creation_date = detail["result"]["Log"][0]["Timestamp"]
         packed_date = ""
@@ -1149,22 +1149,22 @@ def run(addresses_config):
             pledged = 1
         else:
             pledged = 0
-        METRICS_OBJ.print("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], pledged=pledged, deals=deals)
-        METRICS_OBJ.print("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
-        METRICS_OBJ.print("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
-        METRICS_OBJ.print("miner_sector_qa_power", value=qa_power, miner_id=miner_id, sector_id=sector)
+        metrics.print("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], pledged=pledged, deals=deals)
+        metrics.print("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
+        metrics.print("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
+        metrics.print("miner_sector_qa_power", value=qa_power, miner_id=miner_id, sector_id=sector)
 
         if packed_date != "":
-            METRICS_OBJ.print("miner_sector_event", value=packed_date, miner_id=miner_id, sector_id=sector, event_type="packed")
+            metrics.print("miner_sector_event", value=packed_date, miner_id=miner_id, sector_id=sector, event_type="packed")
         if creation_date != "":
-            METRICS_OBJ.print("miner_sector_event", value=creation_date, miner_id=miner_id, sector_id=sector, event_type="creation")
+            metrics.print("miner_sector_event", value=creation_date, miner_id=miner_id, sector_id=sector, event_type="creation")
         if finalized_date != "":
-            METRICS_OBJ.print("miner_sector_event", value=finalized_date, miner_id=miner_id, sector_id=sector, event_type="finalized")
+            metrics.print("miner_sector_event", value=finalized_date, miner_id=miner_id, sector_id=sector, event_type="finalized")
 
         if detail["result"]["State"] not in ["Proving", "Removed"]:
             for deal in detail["result"]["Deals"]:
                 if deal != 0:
-                    deal_info = LOTUS_OBJ.get_deal_info_enhanced(deal)
+                    deal_info = lotus.get_deal_info_enhanced(deal)
                     deal_is_verified = deal_info["VerifiedDeal"]
                     deal_size = deal_info["PieceSize"]
                     deal_price_per_epoch = deal_info["StoragePricePerEpoch"]
@@ -1174,43 +1174,43 @@ def run(addresses_config):
                     deal_end_epoch = deal_info["EndEpoch"]
                     deal_client = deal_info["Client"]
 
-                    METRICS_OBJ.print("miner_sector_sealing_deals_info", value=1, miner_id=miner_id, sector_id=sector, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
+                    metrics.print("miner_sector_sealing_deals_info", value=1, miner_id=miner_id, sector_id=sector, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
 
-    METRICS_OBJ.checkpoint("Sectors")
+    metrics.checkpoint("Sectors")
 
     # GENERATE DEADLINES
-    deadlines = LOTUS_OBJ.get_deadlines_enhanced()
-    METRICS_OBJ.print("miner_deadline_info", value=1, miner_id=miner_id, current_idx=deadlines["cur"]["Index"], current_epoch=deadlines["cur"]["CurrentEpoch"], current_open_epoch=deadlines["cur"]["Open"], wpost_period_deadlines=deadlines["cur"]["WPoStPeriodDeadlines"], wpost_challenge_window=deadlines["cur"]["WPoStChallengeWindow"])
+    deadlines = lotus.get_deadlines_enhanced()
+    metrics.print("miner_deadline_info", value=1, miner_id=miner_id, current_idx=deadlines["cur"]["Index"], current_epoch=deadlines["cur"]["CurrentEpoch"], current_open_epoch=deadlines["cur"]["Open"], wpost_period_deadlines=deadlines["cur"]["WPoStPeriodDeadlines"], wpost_challenge_window=deadlines["cur"]["WPoStChallengeWindow"])
     for dl_id, deadline in deadlines["deadlines"].items():
-        METRICS_OBJ.print("miner_deadline_active_start", value=deadline["StartIn"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_partitions_proven", value=deadline["ProvenPartition"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_partitions", value=deadline["PartitionsCount"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_sectors_all", value=deadline["AllSectorsCount"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_sectors_recovering", value=deadline["RecoveringSectorsCount"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_sectors_faulty", value=deadline["FaultySectorsCount"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_sectors_active", value=deadline["ActiveSectorsCount"], miner_id=miner_id, index=dl_id)
-        METRICS_OBJ.print("miner_deadline_active_sectors_live", value=deadline["LiveSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_start", value=deadline["StartIn"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_partitions_proven", value=deadline["ProvenPartition"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_partitions", value=deadline["PartitionsCount"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_sectors_all", value=deadline["AllSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_sectors_recovering", value=deadline["RecoveringSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_sectors_faulty", value=deadline["FaultySectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_sectors_active", value=deadline["ActiveSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.print("miner_deadline_active_sectors_live", value=deadline["LiveSectorsCount"], miner_id=miner_id, index=dl_id)
         for partition_id, partition in deadline["partitions"].items():
             for sector_id in partition.keys():
                 is_active = "Active" in partition[sector_id]
                 is_live = "Live" in partition[sector_id]
                 is_recovering = "Recovering" in partition[sector_id]
                 is_faulty = "Faulty" in partition[sector_id]
-                METRICS_OBJ.print("miner_deadline_active_partition_sector", is_active=is_active, is_live=is_live, is_recovering=is_recovering, is_faulty=is_faulty, value=1, miner_id=miner_id, deadline_id=dl_id, partition_id=partition_id, sector_id=sector_id)
-    METRICS_OBJ.checkpoint("Deadlines")
+                metrics.print("miner_deadline_active_partition_sector", is_active=is_active, is_live=is_live, is_recovering=is_recovering, is_faulty=is_faulty, value=1, miner_id=miner_id, deadline_id=dl_id, partition_id=partition_id, sector_id=sector_id)
+    metrics.checkpoint("Deadlines")
 
 
     # GENERATE STORAGE INFO
-    for sto in LOTUS_OBJ.get_storagelist_enhanced():
-        METRICS_OBJ.print("miner_storage_info", value=1, miner_id=miner_id, storage_id=sto["storage_id"], storage_url=sto["url"], storage_host_name=sto["host_name"], storage_host_ip=sto["host_ip"], storage_host_port=sto["host_port"], weight=sto["weight"], can_seal=sto["can_seal"], can_store=sto["can_store"], path=sto["path"])
-        METRICS_OBJ.print("miner_storage_capacity", value=sto["capacity"], miner_id=miner_id, storage_id=sto["storage_id"])
-        METRICS_OBJ.print("miner_storage_available", value=sto["available"], miner_id=miner_id, storage_id=sto["storage_id"])
-        METRICS_OBJ.print("miner_storage_reserved", value=sto["reserved"], miner_id=miner_id, storage_id=sto["storage_id"])
-    METRICS_OBJ.checkpoint("Storage")
+    for sto in lotus.get_storagelist_enhanced():
+        metrics.print("miner_storage_info", value=1, miner_id=miner_id, storage_id=sto["storage_id"], storage_url=sto["url"], storage_host_name=sto["host_name"], storage_host_ip=sto["host_ip"], storage_host_port=sto["host_port"], weight=sto["weight"], can_seal=sto["can_seal"], can_store=sto["can_store"], path=sto["path"])
+        metrics.print("miner_storage_capacity", value=sto["capacity"], miner_id=miner_id, storage_id=sto["storage_id"])
+        metrics.print("miner_storage_available", value=sto["available"], miner_id=miner_id, storage_id=sto["storage_id"])
+        metrics.print("miner_storage_reserved", value=sto["reserved"], miner_id=miner_id, storage_id=sto["storage_id"])
+    metrics.checkpoint("Storage")
 
     # GENERATE MARKET INFO
-    market_info = LOTUS_OBJ.get_market_info_enhanced()
-    METRICS_OBJ.print("miner_market_info", value=1,
+    market_info = lotus.get_market_info_enhanced()
+    metrics.print("miner_market_info", value=1,
                     miner_id=miner_id,
                     retrieval_consider_online_deals=market_info["retrieval"]["ConsiderOnlineDeals"],
                     retrieval_consider_offline_deals=market_info["retrieval"]["ConsiderOfflineDeals"],
@@ -1224,7 +1224,7 @@ def run(addresses_config):
                     storage_unverified_price=market_info["storage"]["Price"],
                     storage_verified_price=market_info["storage"]["VerifiedPrice"],
                     )
-    METRICS_OBJ.checkpoint("Market")
+    metrics.checkpoint("Market")
 
     # GENERATE DEALS INFOS
     # XXX NOT FINISHED
@@ -1234,8 +1234,8 @@ def run(addresses_config):
 
     # Execution successfully finished, printout all data for prometheus
     # GENERATE SCRAPE TIME
-    METRICS_OBJ.print("scrape_duration_seconds", value=(time.time() - START_TIME), collector="All")
-    METRICS_OBJ.print("scrape_execution_succeed", value=1)
+    metrics.print("scrape_duration_seconds", value=(time.time() - START_TIME), collector="All")
+    metrics.print("scrape_execution_succeed", value=1)
 
     # XXX TODO
     # Bugs :
@@ -1270,7 +1270,7 @@ def get_api_and_token(api, path):
 def main():
     """ main function """
 
-    global START_TIME, LOTUS_OBJ, METRICS_OBJ
+    global START_TIME
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
@@ -1297,21 +1297,21 @@ def main():
     START_TIME = time.time()
 
     # Create Metrics object
-    METRICS_OBJ = Metrics()
+    metrics = Metrics()
 
     # Create Lotus object
     try:
-        LOTUS_OBJ = Lotus(miner_url, miner_token, daemon_url, daemon_token)
+        lotus = Lotus(miner_url, miner_token, daemon_url, daemon_token)
     except DaemonError as e_generic:
-        METRICS_OBJ.terminate(e_generic, -1)
+        metrics.terminate(e_generic, -1)
     except MinerError as e_generic:
-        METRICS_OBJ.terminate(e_generic, -2)
+        metrics.terminate(e_generic, -2)
 
     # Load config file to retrieve external wallet and vlookup
     addresses_config = load_toml(args.farcaster_path.joinpath("addresses.toml"))
 
     # execute the collector
-    run(addresses_config)
+    run(lotus, metrics, addresses_config)
 
 if __name__ == "__main__":
 
