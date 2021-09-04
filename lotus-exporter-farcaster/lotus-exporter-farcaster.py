@@ -943,7 +943,7 @@ def run(lotus, metrics, addresses_config):
 
     try:
         miner_control0 = daemon_stats["result"]["ControlAddresses"][0]
-    except Exception as e_generic:
+    except Exception:
         miner_control0 = miner_worker
     else:
         # Add miner addresses to known_addresses lookup table
@@ -1090,7 +1090,7 @@ def run(lotus, metrics, addresses_config):
 
             try:
                 worker_host = workerstats["result"][wrk]["Info"]["Hostname"]
-            except Exception as e_generic:
+            except Exception:
                 # sometime WorkerJobs return invalid worker_id like 0000-000000-0000... in that case return unknown
                 worker_host = "unknown"
             task = str(job['Task'])
