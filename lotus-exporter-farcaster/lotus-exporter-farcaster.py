@@ -1276,14 +1276,14 @@ def main():
     parser.add_argument("--farcaster-path", default=os.environ.get("LOTUS_FARCASTER_PATH", Path.home().joinpath(".lotus-exporter-farcaster")), type=Path)
     output = parser.add_mutually_exclusive_group()
     output.add_argument("--file", help="output metrics to file")
-    output.add_argument("--listen", nargs="?", metavar="ip:port", const="0.0.0.0:9091", help="serve metrics on http")
+    output.add_argument("--listen", nargs="?", metavar="ip:port", const="localhost:9101", help="serve metrics on http")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
 
     _listen_fds = listen_fds()
     if _listen_fds:
-        httpd = HTTPServer(('localhost', 9091), metrics_handler(args), bind_and_activate=False)
+        httpd = HTTPServer(('localhost', 9101), metrics_handler(args), bind_and_activate=False)
         httpd.socket = socket.fromfd(_listen_fds[0], HTTPServer.address_family, HTTPServer.socket_type)
         httpd.server_activate()
         return httpd.serve_forever()
