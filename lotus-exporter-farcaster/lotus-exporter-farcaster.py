@@ -208,24 +208,16 @@ class Lotus(object):
         self.url = url
         self.token = token
 
-    def get(self, *args, **kwargs):
-        """wrapper for miner api call to manage errors in a metrics environment """
-        return self.get_json(*args, **kwargs)
-
-    def get_multiple(self, *args, **kwargs):
-        """wrapper for miner api call to manage errors in a metrics environment """
-        return self.get_json_multiple(*args, **kwargs)
-
     @Error.wrap
-    def get_json(self, method, params):
+    def get(self, method, params):
         """Send a request to the daemon API / This function rely on the function that support async, but present a much simpler interface"""
-        result = self.get_json_multiple([[method, params]])[0]
+        result = self.get_multiple([[method, params]])[0]
         if "error" in result.keys():
             raise DaemonError(f"\nTarget : {self.target}\nMethod : {method}\nParams : {params}\nResult : {result}")
         return result
 
     @Error.wrap
-    def get_json_multiple(self, requests):
+    def get_multiple(self, requests):
         """ Send multiple request in Async mode to the daemon API"""
         return asyncio.run(self.__get_json_multiple(self.url, self.token, requests))
 
@@ -345,7 +337,7 @@ class Daemon(Lotus):
         try:
             return self.__chain_head
         except AttributeError:
-            self.__chain_head = self.get_json("ChainHead", [])["result"]
+            self.__chain_head = self.get("ChainHead", [])["result"]
         return self.__chain_head
 
     @Error.wrap
@@ -384,9 +376,9 @@ class Daemon(Lotus):
         if len(addr) >= 2 and addr[1] == "0":
             name, addr = addr, None
             try:
-                actor = self.get_json("StateGetActor", [name, self.tipset_key()])["result"]["Code"]["/"]
+                actor = self.get("StateGetActor", [name, self.tipset_key()])["result"]["Code"]["/"]
                 assert self._get_actor_type(actor) == "Account" # break out of the try if false
-                addr = self.get_json("StateAccountKey", [addr, self.tipset_key()])["result"]
+                addr = self.get("StateAccountKey", [addr, self.tipset_key()])["result"]
             except:
                 pass
 
@@ -397,7 +389,7 @@ class Daemon(Lotus):
 
         if addr and not name:
             try:
-                name = self.get_json("StateLookupID", [addr, self.tipset_key()])["result"]
+                name = self.get("StateLookupID", [addr, self.tipset_key()])["result"]
             except:
                 pass
 
@@ -417,7 +409,7 @@ class Daemon(Lotus):
         The code is based from an extract from : https://github.com/filecoin-project/specs-actors/blob/7d06c2806ff09868abea9e267ead2ada8438e077/actors/builtin/methods.go"""
 
         try:
-            actor = self.get_json("StateGetActor", [address, self.tipset_key()])
+            actor = self.get("StateGetActor", [address, self.tipset_key()])
         except Exception:
             return("Invalid address", "Unknown")
 
@@ -476,11 +468,11 @@ class Daemon(Lotus):
 
 
         # get State of each deadlines
-        proven_deadlines = self.get_json("StateMinerDeadlines", [miner_id, self.tipset_key()])
+        proven_deadlines = self.get("StateMinerDeadlines", [miner_id, self.tipset_key()])
 
         # Init the structures that will contains all the deadlines information
         deadlines_info = {}
-        deadlines_info["cur"] = self.get_json("StateMinerProvingDeadline", [miner_id, self.tipset_key()])["result"]
+        deadlines_info["cur"] = self.get("StateMinerProvingDeadline", [miner_id, self.tipset_key()])["result"]
 
         number_of_dls = deadlines_info["cur"]["WPoStPeriodDeadlines"]
 
@@ -488,7 +480,7 @@ class Daemon(Lotus):
         for c_dl in range(number_of_dls):
             dl_id = (deadlines_info["cur"]["Index"] + c_dl) % number_of_dls
 
-            partitions = self.get_json("StateMinerPartitions", [miner_id, dl_id, self.tipset_key()])
+            partitions = self.get("StateMinerPartitions", [miner_id, dl_id, self.tipset_key()])
             if partitions["result"]:
                 deadlines_info["deadlines"][dl_id] = {}
                 opened = deadlines_info["cur"]["Open"] + deadlines_info["cur"]["WPoStChallengeWindow"] * c_dl
@@ -521,7 +513,7 @@ class Daemon(Lotus):
     def get_deal_info_enhanced(self, deal_id):
         """ Return deald information with lookup on addresses."""
         try:
-            deal_info = self.get_json("StateMarketStorageDeal", [deal_id, self.tipset_key()])["result"]
+            deal_info = self.get("StateMarketStorageDeal", [deal_id, self.tipset_key()])["result"]
         except Exception:
             deal = {
                 "Client": "unknown",
@@ -551,7 +543,7 @@ class Daemon(Lotus):
 
         msg_list = []
 
-        mpoolpending = self.get_json("MpoolPending", [self.tipset_key()])
+        mpoolpending = self.get("MpoolPending", [self.tipset_key()])
 
         # Go through all messages and add informations
         for msg in mpoolpending["result"]:
@@ -576,7 +568,7 @@ class Daemon(Lotus):
         try:
             return self.__local_wallet_list
         except AttributeError:
-            self.__local_wallet_list = self.get_json("WalletList", [])["result"]
+            self.__local_wallet_list = self.get("WalletList", [])["result"]
         return self.__local_wallet_list
 
     @Error.wrap
@@ -591,7 +583,7 @@ class Daemon(Lotus):
         walletlist = self.__get_local_wallet_list()
         for addr in walletlist:
             try:
-                balance = self.get_json("WalletBalance", [addr])["result"]
+                balance = self.get("WalletBalance", [addr])["result"]
             except Exception as e_generic:
                 logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
                 continue
@@ -602,21 +594,21 @@ class Daemon(Lotus):
             res[addr]["name"] = self.__address_lookup(addr)
 
             try:
-                verified_result = self.get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
+                verified_result = self.get("StateVerifiedClientStatus", [addr, self.tipset_key()])
                 res[addr]["verified_datacap"] = verified_result["result"]
             except Exception:
                 res[addr]["verified_datacap"] = 0
 
         # 2 Add miner balance
         res[miner_id] = {}
-        res[miner_id]["balance"] = self.get_json("StateMinerAvailableBalance", [miner_id, self.tipset_key()])["result"]
+        res[miner_id]["balance"] = self.get("StateMinerAvailableBalance", [miner_id, self.tipset_key()])["result"]
         res[miner_id]["name"] = miner_id
-        res[miner_id]["verified_datacap"] = self.get_json("StateVerifiedClientStatus", [miner_id, self.tipset_key()])["result"]
+        res[miner_id]["verified_datacap"] = self.get("StateVerifiedClientStatus", [miner_id, self.tipset_key()])["result"]
 
         # 3 Add external_wallets :
         for addr in external_wallets:
             try:
-                balance = self.get_json("WalletBalance", [addr])["result"]
+                balance = self.get("WalletBalance", [addr])["result"]
             except Exception as e_generic:
                 logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
                 continue
@@ -627,7 +619,7 @@ class Daemon(Lotus):
             res[addr]["name"] = external_wallets[addr]
 
             try:
-                verified_result = self.get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])
+                verified_result = self.get("StateVerifiedClientStatus", [addr, self.tipset_key()])
                 res[addr]["verified_datacap"] = verified_result["result"]
             except Exception:
                 res[addr]["verified_datacap"] = 0
@@ -650,7 +642,7 @@ class Miner(Lotus):
             return self.miner_id
         except AttributeError:
             # RETRIEVE MINER ID
-            actoraddress = self.get_json("ActorAddress", [])
+            actoraddress = self.get("ActorAddress", [])
             self.miner_id = actoraddress['result']
         return self.miner_id
 
@@ -659,13 +651,13 @@ class Miner(Lotus):
         """ create one structure with all the info related to storage and retreival market """
         res = {}
 
-        res["storage"] = self.get_json("MarketGetAsk", [])["result"]["Ask"]
-        res["storage"]["ConsiderOnlineDeals"] = self.get_json("DealsConsiderOnlineStorageDeals", [])["result"]
-        res["storage"]["ConsiderOfflineDeals"] = self.get_json("DealsConsiderOfflineStorageDeals", [])["result"]
+        res["storage"] = self.get("MarketGetAsk", [])["result"]["Ask"]
+        res["storage"]["ConsiderOnlineDeals"] = self.get("DealsConsiderOnlineStorageDeals", [])["result"]
+        res["storage"]["ConsiderOfflineDeals"] = self.get("DealsConsiderOfflineStorageDeals", [])["result"]
 
-        res["retrieval"] = self.get_json("MarketGetRetrievalAsk", [])["result"]
-        res["retrieval"]["ConsiderOnlineDeals"] = self.get_json("DealsConsiderOnlineRetrievalDeals", [])["result"]
-        res["retrieval"]["ConsiderOfflineDeals"] = self.get_json("DealsConsiderOfflineRetrievalDeals", [])["result"]
+        res["retrieval"] = self.get("MarketGetRetrievalAsk", [])["result"]
+        res["retrieval"]["ConsiderOnlineDeals"] = self.get("DealsConsiderOnlineRetrievalDeals", [])["result"]
+        res["retrieval"]["ConsiderOfflineDeals"] = self.get("DealsConsiderOfflineRetrievalDeals", [])["result"]
 
         return res
 
@@ -673,12 +665,12 @@ class Miner(Lotus):
     def get_storagelist_enhanced(self):
         """ Get storage list enhanced with reverse hostname lookup"""
 
-        storage_list = self.get_json("StorageList", [])
+        storage_list = self.get("StorageList", [])
 
-        storage_local_list = self.get_json("StorageLocal", [])
+        storage_local_list = self.get("StorageLocal", [])
         res = []
         for storage in storage_list["result"].keys():
-            storage_info = self.get_json("StorageInfo", [storage])
+            storage_info = self.get("StorageInfo", [storage])
 
             sto = {}
             if storage in storage_local_list["result"].keys():
@@ -699,7 +691,7 @@ class Miner(Lotus):
             sto["can_seal"] = storage_info["result"]["CanSeal"]
             sto["can_store"] = storage_info["result"]["CanStore"]
             try:
-                storage_stat = self.get_json("StorageStat", [storage])
+                storage_stat = self.get("StorageStat", [storage])
             except Exception:
                 sto["capacity"] = 0
                 sto["available"] = 0
