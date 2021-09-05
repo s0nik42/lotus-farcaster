@@ -64,7 +64,11 @@ import logging
 from functools import wraps
 import io
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from systemd.daemon import listen_fds
+try:
+    from systemd.daemon import listen_fds
+except ModuleNotFoundError:
+    logging.warn("systemd.daemon module not found, systemd socket activation will not be supported")
+    listen_fds = lambda: []
 
 VERSION = "v2.0.3"
 
