@@ -49,7 +49,6 @@ SOFTWARE.
 
 from urllib.parse import urlparse
 from pathlib import Path
-from contextlib import contextmanager
 import json
 import time
 import sys
@@ -778,7 +777,6 @@ class Metrics(object):
         "wallet_locked_balance"                     : {"type" : "gauge", "help": "return miner wallet locked funds"},
         "wallet_verified_datacap"                   : {"type" : "gauge", "help": "return miner wallet datacap per address"}
     }
-    __metrics = []
 
     def __init__(self, collector="All", output=sys.stdout):
         self._printed_metrics = set()
@@ -791,7 +789,7 @@ class Metrics(object):
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, *args):
         self.print("scrape_duration_seconds", value=(time.time() - self._start_time), collector=self._collector)
         # This is to preserve the existhing behavior where only the All collector logs success, I think all collectors should, but I don't want to change the output
         if self._collector == "All":
@@ -836,13 +834,6 @@ class Metrics(object):
             self._collector_start_time = self._start_time
         self.print("scrape_duration_seconds", value=(time.time() - self._collector_start_time), collector=collector_name)
         self._collector_start_time = time.time()
-
-    def terminate(self, msg: str = "", value: int = 0):
-        """properly terminating the process execution on error."""
-        self.print("scrape_execution_succeed", value=value)
-        print(msg, file=sys.stderr)
-        sys.exit(0)
-
 
 #################################################################################
 # FUNCTIONS
