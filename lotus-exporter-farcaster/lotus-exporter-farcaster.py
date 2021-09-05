@@ -91,7 +91,7 @@ class MinerError(Error):
 class DaemonError(Error):
     """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
 
-class LotusBase(object):
+class Lotus(object):
     target = "lotus"
     Error = Error
 
@@ -327,7 +327,7 @@ class LotusBase(object):
 
 
 
-class Daemon(LotusBase):
+class Daemon(Lotus):
     target = "daemon"
     Error = DaemonError
 
@@ -636,7 +636,7 @@ class Daemon(LotusBase):
         wallet_list = self.get_wallet_list_enhanced(miner_id).keys()
         return self.get_mpool_pending_enhanced(wallet_list)
 
-class Miner(LotusBase):
+class Miner(Lotus):
     target = "miner"
     Error = MinerError
 
