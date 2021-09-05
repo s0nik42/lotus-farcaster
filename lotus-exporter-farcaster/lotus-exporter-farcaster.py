@@ -773,10 +773,11 @@ class Metrics(object):
     }
     __metrics = []
 
-    def __init__(self, collector="All"):
+    def __init__(self, collector="All", output=sys.stdout):
         self._printed_metrics = set()
         self._start_time = time.time()
         self._collector = collector
+        self._output = output
         if self._collector == "All":
             self.print("local_time", value=int(self._start_time))
         
@@ -805,17 +806,17 @@ class Metrics(object):
 
         # Check if a the HELP and TYPE has already been displayed written
         if metric not in self._printed_metrics:
-            print(f'# HELP {self.__PREFIX}{ metric } { self.__METRICS_LIST[metric]["help"] }')
-            print(f'# TYPE {self.__PREFIX}{ metric } { self.__METRICS_LIST[metric]["type"] }')
+            print(f'# HELP {self.__PREFIX}{ metric } { self.__METRICS_LIST[metric]["help"] }', file=self._output)
+            print(f'# TYPE {self.__PREFIX}{ metric } { self.__METRICS_LIST[metric]["type"] }', file=self._output)
             self._printed_metrics.add(metric)
 
         # Printout the formatted metric
         labels_txt = ", ".join(f'{ l }="{ v }"' for l, v in labels.items())
-        print(f'{self.__PREFIX}{ metric } {{ { labels_txt } }} { value }')
+        print(f'{self.__PREFIX}{ metric } {{ { labels_txt } }} { value }', file=self._output)
 
     # Create a new collector context that will record the scrape duration for this category of metrics
     def collector(self, collector_name):
-        collector = Metrics(collector=collector_name)
+        collector = Metrics(collector=collector_name, output=self._output)
         # Share the printed_metrics set so that help is not re-printed
         collector._printed_metrics = self._printed_metrics
         return collector
