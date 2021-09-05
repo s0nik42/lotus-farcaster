@@ -64,6 +64,7 @@ import logging
 from functools import wraps
 import io
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from systemd.daemon import listen_fds
 
 VERSION = "v2.0.3"
 
@@ -1275,7 +1276,13 @@ def main():
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
 
-    logging.debug(f"args: {args}")
+    _listen_fds = listen_fds()
+    if _listen_fds:
+        httpd = HTTPServer(('localhost', 9091), metrics_handler(args), bind_and_activate=False)
+        httpd.socket = socket.fromfd(_listen_fds[0], HTTPServer.address_family, HTTPServer.socket_type)
+        httpd.server_activate()
+        return httpd.serve_forever()
+
     if args.listen:
         logging.info(f"Listening on {args.listen}")
         [addr, port] = args.listen.split(":")
