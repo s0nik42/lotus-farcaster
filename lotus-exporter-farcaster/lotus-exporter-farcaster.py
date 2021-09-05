@@ -62,6 +62,8 @@ import multibase
 import argparse
 import logging
 from functools import wraps
+import io
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 VERSION = "v2.0.3"
 
@@ -858,7 +860,7 @@ def load_toml(toml_file):
     else:
         return nested_dict
 
-def run(daemon, miner, metrics, addresses_config):
+def collect(daemon, miner, metrics, addresses_config):
     """ run metrics collection and export """
 
     # miner_id
@@ -1225,22 +1227,8 @@ def get_api_and_token(api, path):
     url = f"{proto}://{addr}:{port}/rpc/v0"
     return (url, token)
 
-def main():
-    """ main function """
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
-    parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
-    parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")), type=Path)
-    parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
-    parser.add_argument("--miner-path", default=os.environ.get("LOTUS_MINER_PATH", Path.home().joinpath(".lotusminer")), type=Path)
-    parser.add_argument("--farcaster-path", default=os.environ.get("LOTUS_FARCASTER_PATH", Path.home().joinpath(".lotus-exporter-farcaster")), type=Path)
-    args = parser.parse_args()
-
-    logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
-
-    with Metrics() as metrics:
-
+def run(args, output):
+    with Metrics(output=output) as metrics:
         try:
             daemon = Daemon(*get_api_and_token(args.daemon_api, args.daemon_path))
         except Exception  as exp:
@@ -1255,7 +1243,58 @@ def main():
         addresses_config = load_toml(args.farcaster_path.joinpath("addresses.toml"))
 
         # execute the collector
-        run(daemon, miner, metrics, addresses_config)
+        collect(daemon, miner, metrics, addresses_config)
+
+def metrics_handler(args):
+    class HTTPMetricsHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            output = io.TextIOWrapper(self.wfile)
+            try:
+                run(args, output=output)
+            finally:
+                output.detach()
+    return HTTPMetricsHandler
+
+def main():
+    """ main function """
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
+    parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
+    parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")), type=Path)
+    parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
+    parser.add_argument("--miner-path", default=os.environ.get("LOTUS_MINER_PATH", Path.home().joinpath(".lotusminer")), type=Path)
+    parser.add_argument("--farcaster-path", default=os.environ.get("LOTUS_FARCASTER_PATH", Path.home().joinpath(".lotus-exporter-farcaster")), type=Path)
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--file", help="output metrics to file")
+    output.add_argument("--listen", nargs="?", metavar="ip:port", const="0.0.0.0:9091", help="serve metrics on http")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
+
+    logging.debug(f"args: {args}")
+    if args.listen:
+        logging.info(f"Listening on {args.listen}")
+        [addr, port] = args.listen.split(":")
+        port = int(port)
+        httpd = HTTPServer((addr, port), metrics_handler(args))
+        return httpd.serve_forever()
+    
+    if args.file and args.file != "-":
+        tmp_file = f"{args.file}$$"
+        try:
+            with open(tmp_file, "w") as f:
+                run(args, output=f)
+        finally:
+            # Always use whatever metrics we have, regardless of exceptions
+            os.rename(tmp_file, args.file)
+        return
+
+    return run(args, output=sys.stdout)
+
 
 if __name__ == "__main__":
     main()
