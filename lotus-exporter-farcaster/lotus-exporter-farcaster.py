@@ -135,27 +135,15 @@ class Lotus(object):
     # REQUEST FUNCTIONS
     def daemon_get(self, *args, **kwargs):
         """wrapper for daemon api call to manage errors in a metrics environment """
-
-        try:
-            return self.daemon.get_json(*args, **kwargs)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
+        return self.daemon.get_json(*args, **kwargs)
 
     def miner_get(self, *args, **kwargs):
         """wrapper for miner api call to manage errors in a metrics environment """
-
-        try:
-            return self.miner.get_json(*args, **kwargs)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
+        return self.miner.get_json(*args, **kwargs)
 
     def miner_get_multiple(self, *args, **kwargs):
         """wrapper for miner api call to manage errors in a metrics environment """
-
-        try:
-            return self.miner.get_json_multiple(*args, **kwargs)
-        except Exception as e_generic:
-            METRICS_OBJ.terminate(e_generic)
+        return self.miner.get_json_multiple(*args, **kwargs)
 
 class LotusBase(object):
     target = "lotus"
@@ -878,19 +866,18 @@ class Metrics(object):
     # Create a new collector context that will record the scrape duration for this category of metrics
     def collector(self, collector_name):
         collector = Metrics(collector=collector_name)
-        # This is to preserve existing behavior where the duration of each collector uses the global start time
-        collector._start_time = self._start_time
         # Share the printed_metrics set so that help is not re-printed
         collector._printed_metrics = self._printed_metrics
         return collector
 
-    COLLECTOR_START_TIME = False
     def checkpoint(self, collector_name):
         """Measure time for each category of calls to api and generate metrics"""
-        if not self.COLLECTOR_START_TIME:
-            self.COLLECTOR_START_TIME = START_TIME
-        self.print("scrape_duration_seconds", value=(time.time() - self.COLLECTOR_START_TIME), collector=collector_name)
-        self.COLLECTOR_START_TIME = time.time()
+        try:
+            self._collector_start_time
+        except AttributeError:
+            self._collector_start_time = self._start_time
+        self.print("scrape_duration_seconds", value=(time.time() - self._collector_start_time), collector=collector_name)
+        self._collector_start_time = time.time()
 
     def terminate(self, msg: str = "", value: int = 0):
         """properly terminating the process execution on error."""
@@ -914,15 +901,14 @@ def load_toml(toml_file):
     try:
         with open(toml_file) as data_file:
             nested_dict = toml.load(data_file)
-    except Exception as e_generic:
-        METRICS_OBJ.terminate(f'Error: loading file {toml_file} : {str(e_generic)}')
+    except Exception as exp:
+        logging.error("failed to load file {toml_file}: {exp}")
+        raise
     else:
         return nested_dict
 
 def run(lotus, metrics, addresses_config):
     """ run metrics collection and export """
-
-    global START_TIME
 
     # miner_id
     miner_id = lotus.miner.id()
@@ -1118,7 +1104,7 @@ def run(lotus, metrics, addresses_config):
             job_start_time = str(job['Start'])
             run_wait = str(job['RunWait'])
             job_start_epoch = time.mktime(time.strptime(job_start_time[:19], '%Y-%m-%dT%H:%M:%S'))
-            metrics.print("miner_worker_job", value=(START_TIME - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
+            metrics.print("miner_worker_job", value=(metrics._start_time - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
     metrics.checkpoint("Jobs")
 
     # GENERATE JOB SCHEDDIAG
@@ -1291,8 +1277,6 @@ def get_api_and_token(api, path):
 def main():
     """ main function """
 
-    global START_TIME
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
     parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
@@ -1314,9 +1298,6 @@ def main():
     except Exception  as e_generic:
         raise MinerError(e_generic)
 
-    # Start execution time mesurement
-    START_TIME = time.time()
-
     with Metrics() as metrics:
         # Create Lotus object
         lotus = Lotus(miner_url, miner_token, daemon_url, daemon_token)
@@ -1328,10 +1309,4 @@ def main():
         run(lotus, metrics, addresses_config)
 
 if __name__ == "__main__":
-
-    # Declare Global Variables
-    START_TIME = None
-    LOTUS_OBJ = None
-    METRICS_OBJ = None
-
     main()
