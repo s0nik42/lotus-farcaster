@@ -820,18 +820,25 @@ class Metrics:
     }
     __metrics = []
 
-    def __init__(self):
+    def __init__(self, collector="All"):
         self._printed_metrics = set()
-
-    def __enter__(self):
         self._start_time = time.time()
-        self.print("local_time", value=int(self._start_time))
-        return self
+        self._collector = collector
+        if self._collector == "All":
+            self.print("local_time", value=int(self._start_time))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        succeeded = exc_val is None
-        self.print("scrape_duration_seconds", value=(time.time() - self._start_time), collector="All")
-        self.print("scrape_execution_succeed", value=int(succeeded))
+        self.print("scrape_duration_seconds", value=(time.time() - self._start_time), collector=self._collector)
+        # This is to preserve the existhing behavior where only the All collector logs success, I think all collectors should, but I don't want to change the output
+        if self._collector == "All":
+            success = 1
+            if isinstance(exc_type, MinerError):
+                success = -2
+            elif isinstance(exc_type, DaemonError):
+                success = -1
+            elif exc_type is not None:
+                success = 0
+            self.print("scrape_execution_succeed", value=success)
 
     def print(self, metric: str = "", value: float = 1, **labels):
         """ add a new metrics """
@@ -850,18 +857,14 @@ class Metrics:
         labels_txt = ", ".join(f'{ l }="{ v }"' for l, v in labels.items())
         print(f'{self.__PREFIX}{ metric } {{ { labels_txt } }} { value }')
 
-    @contextmanager
     # Create a new collector context that will record the scrape duration for this category of metrics
     def collector(self, collector_name):
-        start_time = time.time()
-        succeeded = True
-        try:
-            yield self
-        except:
-            succeeded = False
-        finally:
-            self.print("scrape_duration_seconds", value=(time.time() - start_time), collector=collector_name)
-            self.print("scrape_execution_succeed", value=int(succeeded), collector=collector_name)
+        collector = Metrics(collector=collector_name)
+        # This is to preserve existing behavior where the duration of each collector uses the global start time
+        collector._start_time = self._start_time
+        # Share the printed_metrics set so that help is not re-printed
+        collector._printed_metrics = self._printed_metrics
+        return collector
 
     COLLECTOR_START_TIME = False
     def checkpoint(self, collector_name):
