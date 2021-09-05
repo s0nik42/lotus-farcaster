@@ -1216,13 +1216,13 @@ def get_api_and_token(api, path):
         [token, api] = api.split(":", 1)
         [_, _, addr, _, port, proto] = api.split("/", 5)
         url = f"{proto}://{addr}:{port}/rpc/v0"
-        return (token, url)
+        return (url, token)
     with open(path.joinpath("token"), "r") as f:
         token = f.read()
     with open(path.joinpath("api"), "r") as f:
         [_, _, addr, _, port, proto] = f.read().split("/", 5)
     url = f"{proto}://{addr}:{port}/rpc/v0"
-    return (token, url)
+    return (url, token)
 
 def main():
     """ main function """
@@ -1238,20 +1238,17 @@ def main():
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
 
-    try:
-        (daemon_token, daemon_url) = get_api_and_token(args.daemon_api, args.daemon_path)
-    except Exception  as e_generic:
-        raise DaemonError(e_generic)
-
-    try:
-        (miner_token, miner_url) = get_api_and_token(args.miner_api, args.miner_path)
-    except Exception  as e_generic:
-        raise MinerError(e_generic)
-
     with Metrics() as metrics:
-        # Create Lotus object
-        daemon = Daemon(daemon_url, daemon_token)
-        miner = Miner(miner_url, miner_token)
+
+        try:
+            daemon = Daemon(*get_api_and_token(args.daemon_api, args.daemon_path))
+        except Exception  as exp:
+            raise DaemonError from exp
+
+        try:
+            miner = Miner(*get_api_and_token(args.miner_api, args.miner_path))
+        except Exception  as exp:
+            raise MinerError from exp
 
         # Load config file to retrieve external wallet and vlookup
         addresses_config = load_toml(args.farcaster_path.joinpath("addresses.toml"))
