@@ -1267,6 +1267,7 @@ def main():
     """ main function """
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--version", action='version', version=VERSION)
     parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
     parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
     parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")), type=Path)
