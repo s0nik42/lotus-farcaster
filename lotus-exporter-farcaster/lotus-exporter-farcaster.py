@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# pylint: disable=C0301, W0511, W0603, W0703, R0914, R0912, R0915, R0902, R0201, C0302, C0103
+# pylint: disable=C0301, W0511, W0603, W0703, R0914, R0912, R0915, R0902, R0201, C0302, C0103, W1202
 """
 @author: s0nik42
 Copyright (c) 2020 Julien NOEL (s0nik42)
@@ -25,6 +25,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+
+# Release v3
+#   - Expired sectors
+#   - Add Deal transfer
+#   - CC-upgrade
 # Release v2
 #   - Object oriented code
 #   - Added basefee
@@ -44,8 +50,6 @@ SOFTWARE.
 #   - Support seamless network upgrade, resolving actor_code change. (implies using py-multibase)
 # v2.0.3:
 #   - Trigger exception when api return no result
-# Futur Release v3
-#   - Add Deal transfer
 
 from urllib.parse import urlparse
 from pathlib import Path
@@ -55,21 +59,14 @@ import sys
 import socket
 import os
 import asyncio
-import aiohttp
-import toml
-import multibase
 import argparse
 import logging
 from functools import wraps
-import io
-from http.server import HTTPServer, BaseHTTPRequestHandler
-try:
-    from systemd.daemon import listen_fds
-except ModuleNotFoundError:
-    logging.warn("systemd.daemon module not found, systemd socket activation will not be supported")
-    listen_fds = lambda: []
+import toml
+import multibase
+import aiohttp
 
-VERSION = "v2.0.3"
+VERSION = "v3.0.0"
 
 #################################################################################
 # CLASS DEFINITION
@@ -80,6 +77,7 @@ class Error(Exception):
 
     @classmethod
     def wrap(cls, f):
+        """wrap function to manage expcetion as a decorator"""
         @wraps(f)
         def wrapper(*args, **kwargs):
             try:
@@ -97,7 +95,8 @@ class MinerError(Error):
 class DaemonError(Error):
     """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
 
-class Lotus(object):
+class Lotus():
+    """Lotus class is a common parent class to Miner and Daemon Class"""
     target = "lotus"
     Error = Error
 
@@ -209,6 +208,25 @@ class Lotus(object):
                             "RestoreBytes"]
                     }
 
+
+    transfer_status_name = [
+        "Requested",
+        "Ongoing",
+        "TransferFinished",
+        "ResponderCompleted",
+        "Finalizing",
+        "Completing",
+        "Completed",
+        "Failing",
+        "Failed",
+        "Cancelling",
+        "Cancelled",
+        "InitiatorPaused",
+        "ResponderPaused",
+        "BothPaused",
+        "ResponderFinalizing",
+        "ResponderFinalizingTransferFinished",
+        "ChannelNotFoundError"]
 
     def __init__(self, url, token):
         self.url = url
@@ -330,19 +348,18 @@ class Lotus(object):
 
         raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
 
-
-
-
 class Daemon(Lotus):
+    """Lotus Daemon class """
     target = "daemon"
     Error = DaemonError
+    __chain_head = None
+    __known_addresses = {}
+    __local_wallet_list = None
 
     @Error.wrap
     def chain_head(self):
         """ Return chain_head is already retrieved or retrieve it for the chain"""
-        try:
-            return self.__chain_head
-        except AttributeError:
+        if self.__chain_head is None:
             self.__chain_head = self.get("ChainHead", [])["result"]
         return self.__chain_head
 
@@ -357,55 +374,58 @@ class Daemon(Lotus):
         return self.chain_head()["Blocks"][0]["ParentBaseFee"]
 
     @Error.wrap
-    def known_addresses(self):
-        try:
-            return self._known_addresses
-        except AttributeError:
-            self._known_addresses = {}
-        return self._known_addresses
-
-    @Error.wrap
     def add_known_addresses(self, *args, **kwargs):
-        return self.known_addresses().update(*args, **kwargs)
+        """ Add new addresses to the vlookup database"""
+        return self.__known_addresses.update(*args, **kwargs)
 
     @Error.wrap
-    def __address_lookup(self, addr):
+    def __address_lookup(self, input_addr):
         """ The function lookup an address and return the corresponding name from the chain or from the know_addresses table"""
-        # Try the simplest case first, whatever we have is known
+
+        # if its in the lookup table, return it straight Away
         try:
-            return self.known_addresses()[addr]
-        except KeyError:
+            return self.__known_addresses[input_addr]
+        except Exception:
             pass
 
-        name = None
-        # second character is 0, this is a short name
-        if len(addr) >= 2 and addr[1] == "0":
-            name, addr = addr, None
+        # If not need to look for the shortname and address
+        # Check if the input address in a shortname
+        if input_addr.startswith("f0"):
+
+            # set the shortname
+            name = input_addr
+
+            # lookup for the address
+            # Retrieve actor type
             try:
                 actor = self.get("StateGetActor", [name, self.tipset_key()])["result"]["Code"]["/"]
-                assert self._get_actor_type(actor) == "Account" # break out of the try if false
-                addr = self.get("StateAccountKey", [addr, self.tipset_key()])["result"]
-            except:
-                pass
+                assert self._get_actor_type(actor) == "Account"
+                addr = self.get("StateAccountKey", [input_addr, self.tipset_key()])["result"]
+            except Exception:
+                # if it failed set address to whatever we have
+                addr = input_addr
 
-        trunc_addr = addr[:5] + "..." + addr[-5:] if addr else None
-        if trunc_addr and not name:
-            # maybe the truncated address is known
-            name = self.known_addresses().get(trunc_addr)
+        # If the input adress is really an address
+        else:
+            addr = input_addr
 
-        if addr and not name:
+            # lookup for the shortname
             try:
                 name = self.get("StateLookupID", [addr, self.tipset_key()])["result"]
-            except:
-                pass
+            except Exception:
+                # If the lookup failed (should not) lets create a nice short address
+                name = addr[0:5] + "..." + addr[-5:]
 
-        # Use whatever we have at this point
-        addr = addr or name
-        name = name or trunc_addr
+        # AT THAT POINT we have a name and an adress
 
-        # Save for next time
-        self.known_addresses()[addr] = name
-        self.known_addresses()[name] = name
+        # Return the name based on the following priority
+        # If in the known address table
+        if name in self.__known_addresses:
+            return self.__known_addresses[name]
+
+        if addr in self.__known_addresses:
+            return self.__known_addresses[addr]
+
         return name
 
     @Error.wrap
@@ -545,7 +565,7 @@ class Daemon(Lotus):
     def get_mpool_pending_enhanced(self, filter_from_address: list = None):
         """ Return an enhanced version of mpool pending with additionnal information : lookup on address / Method Type / etc ...
 
-        If these information are useles, better call directly : daemon_get_json("MpoolPending",...)"""
+        If these information are useles, better call directly : daemon.get("MpoolPending",...)"""
 
         msg_list = []
 
@@ -571,9 +591,7 @@ class Daemon(Lotus):
     @Error.wrap
     def __get_local_wallet_list(self):
         """ retrieve local wallet list, return cache version if already executed """
-        try:
-            return self.__local_wallet_list
-        except AttributeError:
+        if self.__local_wallet_list is None:
             self.__local_wallet_list = self.get("WalletList", [])["result"]
         return self.__local_wallet_list
 
@@ -587,11 +605,12 @@ class Daemon(Lotus):
 
         # 1 Add wallet adresses to the loop and manage the case where wallet adress doesnt exist onchain because never get any transaction
         walletlist = self.__get_local_wallet_list()
+
         for addr in walletlist:
             try:
                 balance = self.get("WalletBalance", [addr])["result"]
             except Exception as e_generic:
-                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
+                logging.warning(f"cannot retrieve {addr} balance : {e_generic}")
                 continue
 
             # Add address to the list
@@ -616,7 +635,7 @@ class Daemon(Lotus):
             try:
                 balance = self.get("WalletBalance", [addr])["result"]
             except Exception as e_generic:
-                logging.warn(f"cannot retrieve {addr} balance : {e_generic}")
+                logging.warning(f"cannot retrieve {addr} balance : {e_generic}")
                 continue
 
             # Add address to the list
@@ -639,15 +658,15 @@ class Daemon(Lotus):
         return self.get_mpool_pending_enhanced(wallet_list)
 
 class Miner(Lotus):
+    """ Miner class"""
     target = "miner"
     Error = MinerError
+    miner_id = None
 
     @Error.wrap
     def id(self):
-        try:
-            return self.miner_id
-        except AttributeError:
-            # RETRIEVE MINER ID
+        """ return miner ID"""
+        if self.miner_id is None:
             actoraddress = self.get("ActorAddress", [])
             self.miner_id = actoraddress['result']
         return self.miner_id
@@ -709,7 +728,15 @@ class Miner(Lotus):
             res.append(sto)
         return res
 
-class Metrics(object):
+    @Error.wrap
+    def get_market_data_transfers_enhanced(self):
+        """ return on-going data-transfers with status name """
+        res = self.get("MarketListDataTransfers", [])["result"]
+        for deal_id, transfer in enumerate(res):
+            res[deal_id]["Status"] = self.transfer_status_name[transfer["Status"]]
+        return res
+
+class Metrics():
     """ This class manage prometheus metrics formatting / checking / print """
 
     # Prefix to all metrics generated by this script
@@ -723,6 +750,7 @@ class Metrics(object):
         "chain_sync_status"                         : {"type" : "gauge", "help": "return daemon sync status with chainhead for each daemon worker"},
         "info"                                      : {"type" : "gauge", "help": "lotus daemon information like address version, value is set to network version number"},
         "local_time"                                : {"type" : "gauge", "help": "time on the node machine when last execution start in epoch"},
+        "miner_data_transfers"                      : {"type" : "gauge", "help": "data-transfer information"},
         "miner_deadline_active_partition_sector"    : {"type" : "gauge", "help": "sector belonging to the partition_id of the deadline_id"},
         "miner_deadline_active_partitions"          : {"type" : "gauge", "help": "number of partitions in the deadline"},
         "miner_deadline_active_partitions_proven"   : {"type" : "gauge", "help": "number of partitions already proven for the deadline"},
@@ -778,66 +806,83 @@ class Metrics(object):
         "wallet_verified_datacap"                   : {"type" : "gauge", "help": "return miner wallet datacap per address"}
     }
 
-    def __init__(self, collector="All", output=sys.stdout):
-        self._printed_metrics = set()
-        self._start_time = time.time()
-        self._collector = collector
+    __metrics = []
+
+    def __init__(self, output=sys.stdout):
+        self.__start_time = time.time()
+        self.__last_collector_start_time = self.__start_time
         self._output = output
-        if self._collector == "All":
-            self.print("local_time", value=int(self._start_time))
-        
+        self.add("local_time", value=int(self.__start_time))
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, *args):
-        self.print("scrape_duration_seconds", value=(time.time() - self._start_time), collector=self._collector)
-        # This is to preserve the existhing behavior where only the All collector logs success, I think all collectors should, but I don't want to change the output
-        if self._collector == "All":
+        self.add("scrape_duration_seconds", value=(time.time() - self.__start_time), collector="All")
+
+        # GENERATE EXIT CODE AND PRINT OUTPUT
+        if exc_type is None:
             success = 1
+        else:
             if exc_type == MinerError:
                 success = -2
             elif exc_type == DaemonError:
                 success = -1
             elif exc_type is not None:
                 success = 0
-            self.print("scrape_execution_succeed", value=success)
 
-    def print(self, metric: str = "", value: float = 1, **labels):
+            # Clear the existing metrics list
+            self.__metrics = []
+
+        self.add("scrape_execution_succeed", value=success)
+        self.print_all()
+
+    def add(self, metric: str = "", value: float = 1, **labels):
         """ add a new metrics """
 
         # Check if metric is in the list of the metrics allowed
-        if metric not in self.__METRICS_LIST:
+        if metric in self.__METRICS_LIST.keys():
+            self.__metrics.append({"name": metric, "labels": labels, "value": value})
+        else:
             raise Exception(f'metric "{metric}" undefined in __METRICS_LIST')
 
-        # Check if a the HELP and TYPE has already been displayed written
-        if metric not in self._printed_metrics:
-            print(f'# HELP {self.__PREFIX}{ metric } { self.__METRICS_LIST[metric]["help"] }', file=self._output)
-            print(f'# TYPE {self.__PREFIX}{ metric } { self.__METRICS_LIST[metric]["type"] }', file=self._output)
-            self._printed_metrics.add(metric)
+    def print_all(self):
+        """ printout all the metrics """
 
-        # Printout the formatted metric
-        labels_txt = ", ".join(f'{ l }="{ v }"' for l, v in labels.items())
-        print(f'{self.__PREFIX}{ metric } {{ { labels_txt } }} { value }', file=self._output)
+        prev = {}
+        # go through all metrics in alphabetic order
+        for metric in sorted(self.__metrics, key=lambda m: m['name']):
+            m_name = metric["name"]
 
-    # Create a new collector context that will record the scrape duration for this category of metrics
-    def collector(self, collector_name):
-        collector = Metrics(collector=collector_name, output=self._output)
-        # Share the printed_metrics set so that help is not re-printed
-        collector._printed_metrics = self._printed_metrics
-        return collector
+            # Check if a the HELP and TYPE has already been displayed written
+            if prev == {} or m_name is not prev["name"]:
+                print(f'# HELP {self.__PREFIX}{ m_name } { self.__METRICS_LIST[m_name]["help"] }', file=self._output)
+                print(f'# TYPE {self.__PREFIX}{ m_name } { self.__METRICS_LIST[m_name]["type"] }', file=self._output)
+
+            # Printout the formatted metric
+            print(f'{self.__PREFIX}{ m_name } {{ ', end="")
+            first = True
+            for i in metric["labels"].keys():
+                if first is True:
+                    first = False
+                else:
+                    print(', ', end="")
+                print(f'{ i }="{ metric["labels"][i] }"', end="")
+            print(f' }} { metric["value"] }')
+            prev = metric
 
     def checkpoint(self, collector_name):
         """Measure time for each category of calls to api and generate metrics"""
-        try:
-            self._collector_start_time
-        except AttributeError:
-            self._collector_start_time = self._start_time
-        self.print("scrape_duration_seconds", value=(time.time() - self._collector_start_time), collector=collector_name)
-        self._collector_start_time = time.time()
+        now = time.time()
+        self.add("scrape_duration_seconds", value=(now - self.__last_collector_start_time), collector=collector_name)
+        self.__last_collector_start_time = now
 
 #################################################################################
 # FUNCTIONS
 #################################################################################
+def printj(parsed):
+    """JSON PRETTY PRINT // Dev only"""
+    print(json.dumps(parsed, indent=4, sort_keys=True))
 
 def load_toml(toml_file):
     """ Load a tmol file into nested dict"""
@@ -866,10 +911,10 @@ def collect(daemon, miner, metrics, addresses_config):
     if "known_addresses" in addresses_config.keys():
         daemon.add_known_addresses(addresses_config["known_addresses"])
 
-    metrics.print("chain_basefee", value=daemon.basefee(), miner_id=miner_id)
+    metrics.add("chain_basefee", value=daemon.basefee(), miner_id=miner_id)
 
     # CHAIN HEIGHT
-    metrics.print("chain_height", value=daemon.chain_head()["Height"], miner_id=miner_id)
+    metrics.add("chain_height", value=daemon.chain_head()["Height"], miner_id=miner_id)
     metrics.checkpoint("ChainHead")
 
     # GENERATE CHAIN SYNC STATUS
@@ -879,8 +924,8 @@ def collect(daemon, miner, metrics, addresses_config):
             diff_height = worker["Target"]["Height"] - worker["Base"]["Height"]
         except Exception:
             diff_height = -1
-        metrics.print("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
-        metrics.print("chain_sync_status", value=worker["Stage"], miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
+        metrics.add("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
+        metrics.add("chain_sync_status", value=worker["Stage"], miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
     metrics.checkpoint("ChainSync")
 
     # GENERATE MINER INFO
@@ -907,40 +952,40 @@ def collect(daemon, miner, metrics, addresses_config):
 
     miner_control0_addr = daemon.get("StateAccountKey", [miner_control0, daemon.tipset_key()])["result"]
 
-    metrics.print("miner_info", value=1, miner_id=miner_id, version=miner_version["result"]["Version"], owner=miner_owner, owner_addr=miner_owner_addr, worker=miner_worker, worker_addr=miner_worker_addr, control0=miner_control0, control0_addr=miner_control0_addr)
-    metrics.print("miner_info_sector_size", value=daemon_stats["result"]["SectorSize"], miner_id=miner_id)
+    metrics.add("miner_info", value=1, miner_id=miner_id, version=miner_version["result"]["Version"], owner=miner_owner, owner_addr=miner_owner_addr, worker=miner_worker, worker_addr=miner_worker_addr, control0=miner_control0, control0_addr=miner_control0_addr)
+    metrics.add("miner_info_sector_size", value=daemon_stats["result"]["SectorSize"], miner_id=miner_id)
     metrics.checkpoint("StateMinerInfo")
 
     # GENERATE DAEMON INFO
     daemon_network = daemon.get("StateNetworkName", [])
     daemon_network_version = daemon.get("StateNetworkVersion", [daemon.tipset_key()])
     daemon_version = daemon.get("Version", [])
-    metrics.print("info", value=daemon_network_version["result"], miner_id=miner_id, version=daemon_version["result"]["Version"], network=daemon_network["result"])
+    metrics.add("info", value=daemon_network_version["result"], miner_id=miner_id, version=daemon_version["result"]["Version"], network=daemon_network["result"])
     metrics.checkpoint("Daemon")
 
     # GENERATE WALLET
     if "external_wallets" in addresses_config:
-        walletlist = daemon.get_wallet_list_enhanced(addresses_config["external_wallets"])
+        walletlist = daemon.get_wallet_list_enhanced(miner_id, addresses_config["external_wallets"])
     else:
         walletlist = daemon.get_wallet_list_enhanced(miner_id)
 
     for addr in walletlist.keys():
-        metrics.print("wallet_balance", value=int(walletlist[addr]["balance"])/1000000000000000000, miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
+        metrics.add("wallet_balance", value=int(walletlist[addr]["balance"])/1000000000000000000, miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
         if walletlist[addr]["verified_datacap"] is not None:
-            metrics.print("wallet_verified_datacap", value=walletlist[addr]["verified_datacap"], miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
+            metrics.add("wallet_verified_datacap", value=walletlist[addr]["verified_datacap"], miner_id=miner_id, address=addr, name=walletlist[addr]["name"])
 
     # Retrieve locked funds balance
     locked_funds = daemon.get("StateReadState", [miner_id, daemon.tipset_key()])
     for i in ["PreCommitDeposits", "LockedFunds", "FeeDebt", "InitialPledge"]:
-        metrics.print("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=miner_id, locked_type=i)
+        metrics.add("wallet_locked_balance", value=int(locked_funds["result"]["State"][i])/1000000000000000000, miner_id=miner_id, address=miner_id, locked_type=i)
     metrics.checkpoint("Balances")
 
     # GENERATE POWER
     powerlist = daemon.get("StateMinerPower", [miner_id, daemon.tipset_key()])
     for minerpower in powerlist["result"]["MinerPower"]:
-        metrics.print("power", value=powerlist["result"]["MinerPower"][minerpower], miner_id=miner_id, scope="miner", power_type=minerpower)
+        metrics.add("power", value=powerlist["result"]["MinerPower"][minerpower], miner_id=miner_id, scope="miner", power_type=minerpower)
     for totalpower in powerlist["result"]["TotalPower"]:
-        metrics.print("power", value=powerlist["result"]["TotalPower"][totalpower], miner_id=miner_id, scope="network", power_type=totalpower)
+        metrics.add("power", value=powerlist["result"]["TotalPower"][totalpower], miner_id=miner_id, scope="network", power_type=totalpower)
 
     # Mining eligibility
     base_info = daemon.get("MinerGetBaseInfo", [miner_id, daemon.chain_head()["Height"], daemon.tipset_key()])
@@ -949,14 +994,14 @@ def collect(daemon, miner, metrics, addresses_config):
         logging.error(f'MinerGetBaseInfo returned no result')
         logging.info(f'KNOWN_REASON your miner needs to have a power >0 for Farcaster to work. Its linked to a Lotus API bug)')
         logging.info(f'SOLUTION restart your miner and node')
-        metrics.print("scrape_execution_succeed", value=0)
+        metrics.add("scrape_execution_succeed", value=0)
         sys.exit(0)
 
     if base_info["result"]["EligibleForMining"]:
         eligibility = 1
     else:
         eligibility = 0
-    metrics.print("power_mining_eligibility", value=eligibility, miner_id=miner_id)
+    metrics.add("power_mining_eligibility", value=eligibility, miner_id=miner_id)
     metrics.checkpoint("Power")
 
     # GENERATE MPOOL
@@ -964,39 +1009,39 @@ def collect(daemon, miner, metrics, addresses_config):
     local_mpool = daemon.get_local_mpool_pending_enhanced(miner_id)
     local_mpool_total = len(local_mpool)
 
-    metrics.print("mpool_total", value=mpool_total, miner_id=miner_id)
-    metrics.print("mpool_local_total", value=local_mpool_total, miner_id=miner_id)
+    metrics.add("mpool_total", value=mpool_total, miner_id=miner_id)
+    metrics.add("mpool_local_total", value=local_mpool_total, miner_id=miner_id)
 
     for msg in local_mpool:
-        metrics.print("mpool_local_message", value=1, miner_id=miner_id, msg_from=msg["display_from"], msg_to=msg["display_to"], msg_nonce=msg["Nonce"], msg_value=msg["Value"], msg_gaslimit=msg["GasLimit"], msg_gasfeecap=msg["GasFeeCap"], msg_gaspremium=msg["GasPremium"], msg_method=msg["Method"], msg_method_type=msg["method_type"], msg_to_actor_type=msg["actor_type"])
+        metrics.add("mpool_local_message", value=1, miner_id=miner_id, msg_from=msg["display_from"], msg_to=msg["display_to"], msg_nonce=msg["Nonce"], msg_value=msg["Value"], msg_gaslimit=msg["GasLimit"], msg_gasfeecap=msg["GasFeeCap"], msg_gaspremium=msg["GasPremium"], msg_method=msg["Method"], msg_method_type=msg["method_type"], msg_to_actor_type=msg["actor_type"])
     metrics.checkpoint("MPool")
 
     # GENERATE NET_PEERS
     daemon_netpeers = daemon.get("NetPeers", [])
-    metrics.print("netpeers_total", value=len(daemon_netpeers["result"]), miner_id=miner_id)
+    metrics.add("netpeers_total", value=len(daemon_netpeers["result"]), miner_id=miner_id)
 
     miner_netpeers = miner.get("NetPeers", [])
-    metrics.print("miner_netpeers_total", value=len(miner_netpeers["result"]), miner_id=miner_id)
+    metrics.add("miner_netpeers_total", value=len(miner_netpeers["result"]), miner_id=miner_id)
     metrics.checkpoint("NetPeers")
 
     # GENERATE NETSTATS XXX Verfier la qualité des stats ... lotus net, API et Grafana sont tous differents
     protocols_list = daemon.get("NetBandwidthStatsByProtocol", [])
     for protocol in protocols_list["result"]:
-        metrics.print("net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
-        metrics.print("net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
+        metrics.add("net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
+        metrics.add("net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
 
     protocols_list = miner.get("NetBandwidthStatsByProtocol", [])
     for protocol in protocols_list["result"]:
-        metrics.print("miner_net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
-        metrics.print("miner_net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
+        metrics.add("miner_net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
+        metrics.add("miner_net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
 
     net_list = daemon.get("NetBandwidthStats", [])
-    metrics.print("net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
-    metrics.print("net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
+    metrics.add("net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
+    metrics.add("net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
 
     net_list = miner.get("NetBandwidthStats", [])
-    metrics.print("miner_net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
-    metrics.print("miner_net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
+    metrics.add("miner_net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
+    metrics.add("miner_net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
     metrics.checkpoint("NetBandwidth")
 
     # GENERATE WORKER INFOS
@@ -1026,15 +1071,15 @@ def collect(daemon, miner, metrics, addresses_config):
         if worker_host not in worker_list.keys():
             worker_list[worker_host] = 1
 
-            metrics.print("miner_worker_cpu", value=cpus, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_gpu", value=gpus, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_mem_physical", value=mem_physical, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_mem_swap", value=mem_swap, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_mem_physical_used", value=mem_used_min, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_mem_vmem_used", value=mem_used_max, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
-            metrics.print("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_cpu", value=cpus, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_gpu", value=gpus, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_mem_physical", value=mem_physical, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_mem_swap", value=mem_swap, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_mem_physical_used", value=mem_used_min, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_mem_vmem_used", value=mem_used_max, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
     metrics.checkpoint("Workers")
 
     # GENERATE JOB INFOS
@@ -1053,7 +1098,7 @@ def collect(daemon, miner, metrics, addresses_config):
             job_start_time = str(job['Start'])
             run_wait = str(job['RunWait'])
             job_start_epoch = time.mktime(time.strptime(job_start_time[:19], '%Y-%m-%dT%H:%M:%S'))
-            metrics.print("miner_worker_job", value=(metrics._start_time - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
+            metrics.add("miner_worker_job", value=(time.time() - job_start_epoch), miner_id=miner_id, job_id=job_id, worker_host=worker_host, task=task, sector_id=sector, job_start_time=job_start_time, run_wait=run_wait)
     metrics.checkpoint("Jobs")
 
     # GENERATE JOB SCHEDDIAG
@@ -1063,7 +1108,7 @@ def collect(daemon, miner, metrics, addresses_config):
         for req in scheddiag["result"]["SchedInfo"]["Requests"]:
             sector = req["Sector"]["Number"]
             task = req["TaskType"]
-            metrics.print("miner_worker_job", miner_id=miner_id, job_id="", worker="", task=task, sector_id=sector, start="", run_wait="99")
+            metrics.add("miner_worker_job", miner_id=miner_id, job_id="", worker="", task=task, sector_id=sector, start="", run_wait="99")
     metrics.checkpoint("SchedDiag")
 
     # GENERATE SECTORS
@@ -1110,17 +1155,17 @@ def collect(daemon, miner, metrics, addresses_config):
             pledged = 1
         else:
             pledged = 0
-        metrics.print("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], pledged=pledged, deals=deals)
-        metrics.print("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
-        metrics.print("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
-        metrics.print("miner_sector_qa_power", value=qa_power, miner_id=miner_id, sector_id=sector)
+        metrics.add("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], to_upgrade=detail["result"]["ToUpgrade"], pledged=pledged, deals=deals)
+        metrics.add("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
+        metrics.add("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
+        metrics.add("miner_sector_qa_power", value=qa_power, miner_id=miner_id, sector_id=sector)
 
         if packed_date != "":
-            metrics.print("miner_sector_event", value=packed_date, miner_id=miner_id, sector_id=sector, event_type="packed")
+            metrics.add("miner_sector_event", value=packed_date, miner_id=miner_id, sector_id=sector, event_type="packed")
         if creation_date != "":
-            metrics.print("miner_sector_event", value=creation_date, miner_id=miner_id, sector_id=sector, event_type="creation")
+            metrics.add("miner_sector_event", value=creation_date, miner_id=miner_id, sector_id=sector, event_type="creation")
         if finalized_date != "":
-            metrics.print("miner_sector_event", value=finalized_date, miner_id=miner_id, sector_id=sector, event_type="finalized")
+            metrics.add("miner_sector_event", value=finalized_date, miner_id=miner_id, sector_id=sector, event_type="finalized")
 
         if detail["result"]["State"] not in ["Proving", "Removed"]:
             for deal in detail["result"]["Deals"]:
@@ -1135,82 +1180,119 @@ def collect(daemon, miner, metrics, addresses_config):
                     deal_end_epoch = deal_info["EndEpoch"]
                     deal_client = deal_info["Client"]
 
-                    metrics.print("miner_sector_sealing_deals_info", value=1, miner_id=miner_id, sector_id=sector, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
+                    metrics.add("miner_sector_sealing_deals_info", value=1, miner_id=miner_id, sector_id=sector, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
 
     metrics.checkpoint("Sectors")
 
     # GENERATE DEADLINES
     deadlines = daemon.get_deadlines_enhanced(miner_id)
-    metrics.print("miner_deadline_info", value=1, miner_id=miner_id, current_idx=deadlines["cur"]["Index"], current_epoch=deadlines["cur"]["CurrentEpoch"], current_open_epoch=deadlines["cur"]["Open"], wpost_period_deadlines=deadlines["cur"]["WPoStPeriodDeadlines"], wpost_challenge_window=deadlines["cur"]["WPoStChallengeWindow"])
+    metrics.add("miner_deadline_info", value=1, miner_id=miner_id, current_idx=deadlines["cur"]["Index"], current_epoch=deadlines["cur"]["CurrentEpoch"], current_open_epoch=deadlines["cur"]["Open"], wpost_period_deadlines=deadlines["cur"]["WPoStPeriodDeadlines"], wpost_challenge_window=deadlines["cur"]["WPoStChallengeWindow"])
     for dl_id, deadline in deadlines["deadlines"].items():
-        metrics.print("miner_deadline_active_start", value=deadline["StartIn"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_partitions_proven", value=deadline["ProvenPartition"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_partitions", value=deadline["PartitionsCount"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_sectors_all", value=deadline["AllSectorsCount"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_sectors_recovering", value=deadline["RecoveringSectorsCount"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_sectors_faulty", value=deadline["FaultySectorsCount"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_sectors_active", value=deadline["ActiveSectorsCount"], miner_id=miner_id, index=dl_id)
-        metrics.print("miner_deadline_active_sectors_live", value=deadline["LiveSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_start", value=deadline["StartIn"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_partitions_proven", value=deadline["ProvenPartition"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_partitions", value=deadline["PartitionsCount"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_sectors_all", value=deadline["AllSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_sectors_recovering", value=deadline["RecoveringSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_sectors_faulty", value=deadline["FaultySectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_sectors_active", value=deadline["ActiveSectorsCount"], miner_id=miner_id, index=dl_id)
+        metrics.add("miner_deadline_active_sectors_live", value=deadline["LiveSectorsCount"], miner_id=miner_id, index=dl_id)
         for partition_id, partition in deadline["partitions"].items():
             for sector_id in partition.keys():
                 is_active = "Active" in partition[sector_id]
                 is_live = "Live" in partition[sector_id]
                 is_recovering = "Recovering" in partition[sector_id]
                 is_faulty = "Faulty" in partition[sector_id]
-                metrics.print("miner_deadline_active_partition_sector", is_active=is_active, is_live=is_live, is_recovering=is_recovering, is_faulty=is_faulty, value=1, miner_id=miner_id, deadline_id=dl_id, partition_id=partition_id, sector_id=sector_id)
+                metrics.add("miner_deadline_active_partition_sector", is_active=is_active, is_live=is_live, is_recovering=is_recovering, is_faulty=is_faulty, value=1, miner_id=miner_id, deadline_id=dl_id, partition_id=partition_id, sector_id=sector_id)
     metrics.checkpoint("Deadlines")
 
 
     # GENERATE STORAGE INFO
     for sto in miner.get_storagelist_enhanced():
-        metrics.print("miner_storage_info", value=1, miner_id=miner_id, storage_id=sto["storage_id"], storage_url=sto["url"], storage_host_name=sto["host_name"], storage_host_ip=sto["host_ip"], storage_host_port=sto["host_port"], weight=sto["weight"], can_seal=sto["can_seal"], can_store=sto["can_store"], path=sto["path"])
-        metrics.print("miner_storage_capacity", value=sto["capacity"], miner_id=miner_id, storage_id=sto["storage_id"])
-        metrics.print("miner_storage_available", value=sto["available"], miner_id=miner_id, storage_id=sto["storage_id"])
-        metrics.print("miner_storage_reserved", value=sto["reserved"], miner_id=miner_id, storage_id=sto["storage_id"])
+        metrics.add("miner_storage_info", value=1, miner_id=miner_id, storage_id=sto["storage_id"], storage_url=sto["url"], storage_host_name=sto["host_name"], storage_host_ip=sto["host_ip"], storage_host_port=sto["host_port"], weight=sto["weight"], can_seal=sto["can_seal"], can_store=sto["can_store"], path=sto["path"])
+        metrics.add("miner_storage_capacity", value=sto["capacity"], miner_id=miner_id, storage_id=sto["storage_id"])
+        metrics.add("miner_storage_available", value=sto["available"], miner_id=miner_id, storage_id=sto["storage_id"])
+        metrics.add("miner_storage_reserved", value=sto["reserved"], miner_id=miner_id, storage_id=sto["storage_id"])
     metrics.checkpoint("Storage")
 
     # GENERATE MARKET INFO
     market_info = miner.get_market_info_enhanced()
-    metrics.print("miner_market_info", value=1,
+    metrics.add("miner_market_info", value=1,
+                miner_id=miner_id,
+                retrieval_consider_online_deals=market_info["retrieval"]["ConsiderOnlineDeals"],
+                retrieval_consider_offline_deals=market_info["retrieval"]["ConsiderOfflineDeals"],
+                retrieval_price_per_byte=market_info["retrieval"]["PricePerByte"],
+                retrieval_unseal_price=market_info["retrieval"]["UnsealPrice"],
+                storage_consider_online_deals=market_info["storage"]["ConsiderOnlineDeals"],
+                storage_consider_offline_deals=market_info["storage"]["ConsiderOfflineDeals"],
+                storage_expiry=market_info["storage"]["Expiry"],
+                storage_max_piece_size=market_info["storage"]["MaxPieceSize"],
+                storage_min_piece_size=market_info["storage"]["MinPieceSize"],
+                storage_unverified_price=market_info["storage"]["Price"],
+                storage_verified_price=market_info["storage"]["VerifiedPrice"],
+                )
+
+    # GENERATE  DATA TRANSFERS
+    data_transfers = miner.get_market_data_transfers_enhanced()
+    for transfer in data_transfers:
+        try:
+            voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
+        except Exception:
+            voucher = ""
+
+        metrics.add("miner_data_transfers", value=transfer["Transferred"],
                     miner_id=miner_id,
-                    retrieval_consider_online_deals=market_info["retrieval"]["ConsiderOnlineDeals"],
-                    retrieval_consider_offline_deals=market_info["retrieval"]["ConsiderOfflineDeals"],
-                    retrieval_price_per_byte=market_info["retrieval"]["PricePerByte"],
-                    retrieval_unseal_price=market_info["retrieval"]["UnsealPrice"],
-                    storage_consider_online_deals=market_info["storage"]["ConsiderOnlineDeals"],
-                    storage_consider_offline_deals=market_info["storage"]["ConsiderOfflineDeals"],
-                    storage_expiry=market_info["storage"]["Expiry"],
-                    storage_max_piece_size=market_info["storage"]["MaxPieceSize"],
-                    storage_min_piece_size=market_info["storage"]["MinPieceSize"],
-                    storage_unverified_price=market_info["storage"]["Price"],
-                    storage_verified_price=market_info["storage"]["VerifiedPrice"],
-                    )
+                    transfer_id=transfer["TransferID"],
+                    status=transfer["Status"],
+                    base_cid=transfer["BaseCID"]["/"],
+                    is_initiator=transfer["IsInitiator"],
+                    is_sender=transfer["IsSender"],
+                    voucher=voucher,
+                    message=transfer["Message"].replace("\n", "  "),
+                    other_peer=transfer["OtherPeer"],
+                    stages=transfer["Stages"])
     metrics.checkpoint("Market")
+
 
     # GENERATE DEALS INFOS
     # XXX NOT FINISHED
-    # publish_deals = get("MarketPendingDeals", '[]'):
-    # METRICS_OBJ.add("miner_pending_deals", value=1, miner_id=miner_id, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
-    # checkpoint("Deals")
+    # publish_deals = miner.get("MarketPendingDeals", '[]'):
+    # metrics.add("miner_pending_deals", value=1, miner_id=miner_id, deal_id=deal, deal_is_verified=deal_is_verified, deal_price_per_epoch=deal_price_per_epoch, deal_provider_collateral=deal_provider_collateral, deal_client_collateral=deal_client_collateral, deal_size=deal_size, deal_start_epoch=deal_start_epoch, deal_end_epoch=deal_end_epoch, deal_client=deal_client)
+    # metrics.checkpoint("Deals")
 
     # XXX TODO
+    # TODO :
+    #   - manage market node
+    #   - Support LOTUS PATH VARIABLES
+    #   - Optimization by memoization
+    #   - Control address
     # Bugs :
     #   Gerer le bug lier à l'absence de Worker (champs GPU vide, etc...)
     # Retrieval Market :
     #   GENERATE RETRIEVAL MARKET
-    #   print(get("MarketListRetrievalDeals",[]))
+    #   print(miner.get("MarketListRetrievalDeals",[]))
     #   GENERATE DATA TRANSFERS
-    #   print(get("MarketListDataTransfers",[]))
+    #   print(miner.get("MarketListDataTransfers",[]))
     #   Pending Deals
     #   MarketPendingDeals
     # Deals : MarketListIncompleteDeals
     # Others :
     #   A quoi correcpond le champs retry dans le SectorStatus
     #   rajouter les errors de sectors
-    #   print(get("StateMinerFaults",[miner_id,LOTUS_OBJ.tipset_key()]))
+    #   print(daemon.get("StateMinerFaults",[miner_id,LOTUS_OBJ.tipset_key()]))
     # Add Partition to Deadlines
+    # - Add the list of sectors we can upgrade (maybe already there)
+# DM lotus@lamia:~$ lotus-exporter-farcaster.py
+# Traceback (most recent call last):
+#   File "/usr/local/bin/lotus-exporter-farcaster.py", line 1303, in <module>
+#     main()
+#   File "/usr/local/bin/lotus-exporter-farcaster.py", line 1000, in main
+#     walletlist = LOTUS_OBJ.get_wallet_list_enhanced()
+#   File "/usr/local/bin/lotus-exporter-farcaster.py", line 676, in get_wallet_list_enhanced
+#     res[addr]["verified_datacap"] = self.daemon.get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])["result"]
+# KeyError: 'result'
 
 def get_api_and_token(api, path):
+    """ generate token and url to connect to both miner and daemon """
     if api:
         [token, api] = api.split(":", 1)
         [_, _, addr, _, port, proto] = api.split("/", 5)
@@ -1224,6 +1306,7 @@ def get_api_and_token(api, path):
     return (url, token)
 
 def run(args, output):
+    """Create all prerequisites object to collect"""
     with Metrics(output=output) as metrics:
         try:
             daemon = Daemon(*get_api_and_token(args.daemon_api, args.daemon_path))
@@ -1241,19 +1324,6 @@ def run(args, output):
         # execute the collector
         collect(daemon, miner, metrics, addresses_config)
 
-def metrics_handler(args):
-    class HTTPMetricsHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header("Content-type", "text/plain")
-            self.end_headers()
-            output = io.TextIOWrapper(self.wfile)
-            try:
-                run(args, output=output)
-            finally:
-                output.detach()
-    return HTTPMetricsHandler
-
 def main():
     """ main function """
 
@@ -1267,25 +1337,10 @@ def main():
     parser.add_argument("--farcaster-path", default=os.environ.get("LOTUS_FARCASTER_PATH", Path.home().joinpath(".lotus-exporter-farcaster")), type=Path)
     output = parser.add_mutually_exclusive_group()
     output.add_argument("--file", help="output metrics to file")
-    output.add_argument("--listen", nargs="?", metavar="ip:port", const="localhost:9101", help="serve metrics on http")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
 
-    _listen_fds = listen_fds()
-    if _listen_fds:
-        httpd = HTTPServer(('localhost', 9101), metrics_handler(args), bind_and_activate=False)
-        httpd.socket = socket.fromfd(_listen_fds[0], HTTPServer.address_family, HTTPServer.socket_type)
-        httpd.server_activate()
-        return httpd.serve_forever()
-
-    if args.listen:
-        logging.info(f"Listening on {args.listen}")
-        [addr, port] = args.listen.split(":")
-        port = int(port)
-        httpd = HTTPServer((addr, port), metrics_handler(args))
-        return httpd.serve_forever()
-    
     if args.file and args.file != "-":
         tmp_file = f"{args.file}$$"
         try:
@@ -1294,10 +1349,9 @@ def main():
         finally:
             # Always use whatever metrics we have, regardless of exceptions
             os.rename(tmp_file, args.file)
-        return
+        return 0
 
     return run(args, output=sys.stdout)
-
 
 if __name__ == "__main__":
     main()
