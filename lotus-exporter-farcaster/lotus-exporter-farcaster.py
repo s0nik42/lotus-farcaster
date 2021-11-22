@@ -25,9 +25,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+
 # Release v3
 #   - Expired sectors
-
+#   - Add Deal transfer
+#   - CC-upgrade
 # Release v2
 #   - Object oriented code
 #   - Added basefee
@@ -47,8 +50,6 @@ SOFTWARE.
 #   - Support seamless network upgrade, resolving actor_code change. (implies using py-multibase)
 # v2.0.3:
 #   - Trigger exception when api return no result
-# Futur Release v3
-#   - Add Deal transfer
 
 from urllib.parse import urlparse
 from pathlib import Path
@@ -62,7 +63,7 @@ import aiohttp
 import toml
 import multibase
 
-VERSION = "v2.0.3"
+VERSION = "v3.0.0"
 
 #
 # OVERRIDE AUTODETECTED CONFIG VALUES (should only be used if autodetection is failling)
@@ -1249,7 +1250,7 @@ def main():
             pledged = 1
         else:
             pledged = 0
-        METRICS_OBJ.add("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], pledged=pledged, deals=deals)
+        METRICS_OBJ.add("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], to_upgrade=detail["result"]["ToUpgrade"], pledged=pledged, deals=deals)
         METRICS_OBJ.add("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
         METRICS_OBJ.add("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
         METRICS_OBJ.add("miner_sector_qa_power", value=qa_power, miner_id=miner_id, sector_id=sector)
@@ -1334,7 +1335,7 @@ def main():
         except Exception:
             voucher = ""
 
-        METRICS_OBJ.add("miner_data_transfers", value=1,
+        METRICS_OBJ.add("miner_data_transfers", value=transfer["Transferred"],
             miner_id=miner_id,
             transfer_id=transfer["TransferID"],
             status=transfer["Status"],
@@ -1344,7 +1345,6 @@ def main():
             voucher=voucher,
             message=transfer["Message"].replace("\n", "  "),
             other_peer=transfer["OtherPeer"],
-            transferred=transfer["Transferred"],
             stages=transfer["Stages"])
 
     checkpoint("Market")
@@ -1365,6 +1365,8 @@ def main():
     # TODO :
     #   - manage market node
     #   - Support LOTUS PATH VARIABLES
+    #   - Optimization by memoization
+    #   - Control address
     # Bugs :
     #   Gerer le bug lier à l'absence de Worker (champs GPU vide, etc...)
     # Retrieval Market :
@@ -1380,6 +1382,17 @@ def main():
     #   rajouter les errors de sectors
     #   print(daemon_get("StateMinerFaults",[miner_id,LOTUS_OBJ.tipset_key()]))
     # Add Partition to Deadlines
+    # - Add the list of sectors we can upgrade (maybe already there)
+# DM lotus@lamia:~$ lotus-exporter-farcaster.py
+# Traceback (most recent call last):
+#   File "/usr/local/bin/lotus-exporter-farcaster.py", line 1303, in <module>
+#     main()
+#   File "/usr/local/bin/lotus-exporter-farcaster.py", line 1000, in main
+#     walletlist = LOTUS_OBJ.get_wallet_list_enhanced()
+#   File "/usr/local/bin/lotus-exporter-farcaster.py", line 676, in get_wallet_list_enhanced
+#     res[addr]["verified_datacap"] = self.daemon_get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])["result"]
+# KeyError: 'result'
+
 
 if __name__ == "__main__":
 
