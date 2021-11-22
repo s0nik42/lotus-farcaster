@@ -1,0 +1,8 @@
+[Unit]
+Description=Lotus Exporter Farcaster
+
+[Socket]
+ListenStream=9101
+
+[Install]
+WantedBy=default.target
