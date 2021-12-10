@@ -1,0 +1,7 @@
+# api connection string use lotus convention (used for FULLNODE_API_INFO/MARKETS_API_INFO/MINER_API_INFO : <TOKEN>:ip4/<IP_ADDRESS>/tcp/<PORT>/http
+# use can manually create config.toml from config.toml.expample or use the install.sh script to create it
+# if the miner doesn't have a markets node. set the markets_api with the same value as the miner_api
+
+miner_api = "<MINER_API_STRING>"
+markets_api = "<MARKETS_API_STRING>"
+daemon_api = "<DAEMON_API_STRING>"
