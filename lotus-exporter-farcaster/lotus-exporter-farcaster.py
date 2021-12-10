@@ -28,9 +28,14 @@ SOFTWARE.
 
 
 # Release v3
-#   - Expired sectors
-#   - Add Deal transfer
-#   - CC-upgrade
+#   - NEW Expired sectors (dashboard + exporter)
+#   - NEW Add Deal transfers Storage and retreival markets (dashboard + exporter)
+#   - NEW CC-upgrade view (dashboard + exporter)
+#   - NEW Support market node (support market node locally or remotely deployed) (community request @BenjaminH)
+#   - Installation scripts now included a Autoconfiguration assistant detecting a wide range of architecture
+#   - Code is now object oriented, these objects exposed enhanced methods that are exposed to be reused by external programs.
+#   - NEW support of multiple miners on the same server (community request @PatHoo)
+
 # Release v2
 #   - Object oriented code
 #   - Added basefee
@@ -66,7 +71,7 @@ import toml
 import multibase
 import aiohttp
 
-VERSION = "v3.0.0"
+VERSION = "v3.0.1"
 
 #################################################################################
 # CLASS DEFINITION
@@ -77,7 +82,7 @@ class Error(Exception):
 
     @classmethod
     def wrap(cls, f):
-        """wrap function to manage expcetion as a decorator"""
+        """wrap function to manage exception as a decorator"""
         @wraps(f)
         def wrapper(*args, **kwargs):
             try:
@@ -86,14 +91,17 @@ class Error(Exception):
                 # Don't wrap already wrapped exceptions
                 raise
             except Exception as exc:
-                raise cls from exc
+                raise exc
         return wrapper
 
 class MinerError(Error):
     """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
 
+class MarketsError(Error):
+    """Customer Exception to identify error coming from the markets. Used  for the dashboard Status panel"""
+
 class DaemonError(Error):
-    """Customer Exception to identify error coming from the miner. Used  for the dashboard Status panel"""
+    """Customer Exception to identify error coming from the daemon. Used  for the dashboard Status panel"""
 
 class Lotus():
     """Lotus class is a common parent class to Miner and Daemon Class"""
@@ -236,8 +244,11 @@ class Lotus():
     def get(self, method, params):
         """Send a request to the daemon API / This function rely on the function that support async, but present a much simpler interface"""
         result = self.get_multiple([[method, params]])[0]
-        if "error" in result.keys():
-            raise DaemonError(f"\nTarget : {self.target}\nMethod : {method}\nParams : {params}\nResult : {result}")
+
+        if result is None:
+            raise DaemonError(f"API returned nothing could be an incorrect API key\nTarget : {self.target}\nMethod : {method}\nParams : {params}\nResult : {result}")
+        elif "error" in result.keys():
+            raise Error(f"\nTarget : {self.target}\nMethod : {method}\nParams : {params}\nResult : {result}")
         return result
 
     @Error.wrap
@@ -672,21 +683,6 @@ class Miner(Lotus):
         return self.miner_id
 
     @Error.wrap
-    def get_market_info_enhanced(self):
-        """ create one structure with all the info related to storage and retreival market """
-        res = {}
-
-        res["storage"] = self.get("MarketGetAsk", [])["result"]["Ask"]
-        res["storage"]["ConsiderOnlineDeals"] = self.get("DealsConsiderOnlineStorageDeals", [])["result"]
-        res["storage"]["ConsiderOfflineDeals"] = self.get("DealsConsiderOfflineStorageDeals", [])["result"]
-
-        res["retrieval"] = self.get("MarketGetRetrievalAsk", [])["result"]
-        res["retrieval"]["ConsiderOnlineDeals"] = self.get("DealsConsiderOnlineRetrievalDeals", [])["result"]
-        res["retrieval"]["ConsiderOfflineDeals"] = self.get("DealsConsiderOfflineRetrievalDeals", [])["result"]
-
-        return res
-
-    @Error.wrap
     def get_storagelist_enhanced(self):
         """ Get storage list enhanced with reverse hostname lookup"""
 
@@ -728,6 +724,26 @@ class Miner(Lotus):
             res.append(sto)
         return res
 
+class Markets(Lotus):
+    """ Markets class"""
+    target = "markets"
+    Error = MarketsError
+
+    @Error.wrap
+    def get_market_info_enhanced(self):
+        """ create one structure with all the info related to storage and retreival market """
+        res = {}
+
+        res["storage"] = self.get("MarketGetAsk", [])["result"]["Ask"]
+        res["storage"]["ConsiderOnlineDeals"] = self.get("DealsConsiderOnlineStorageDeals", [])["result"]
+        res["storage"]["ConsiderOfflineDeals"] = self.get("DealsConsiderOfflineStorageDeals", [])["result"]
+
+        res["retrieval"] = self.get("MarketGetRetrievalAsk", [])["result"]
+        res["retrieval"]["ConsiderOnlineDeals"] = self.get("DealsConsiderOnlineRetrievalDeals", [])["result"]
+        res["retrieval"]["ConsiderOfflineDeals"] = self.get("DealsConsiderOfflineRetrievalDeals", [])["result"]
+
+        return res
+
     @Error.wrap
     def get_market_data_transfers_enhanced(self):
         """ return on-going data-transfers with status name """
@@ -735,6 +751,7 @@ class Miner(Lotus):
         for deal_id, transfer in enumerate(res):
             res[deal_id]["Status"] = self.transfer_status_name[transfer["Status"]]
         return res
+
 
 class Metrics():
     """ This class manage prometheus metrics formatting / checking / print """
@@ -824,7 +841,9 @@ class Metrics():
         if exc_type is None:
             success = 1
         else:
-            if exc_type == MinerError:
+            if exc_type == MarketsError:
+                success = -3
+            elif exc_type == MinerError:
                 success = -2
             elif exc_type == DaemonError:
                 success = -1
@@ -860,15 +879,15 @@ class Metrics():
                 print(f'# TYPE {self.__PREFIX}{ m_name } { self.__METRICS_LIST[m_name]["type"] }', file=self._output)
 
             # Printout the formatted metric
-            print(f'{self.__PREFIX}{ m_name } {{ ', end="")
+            print(f'{self.__PREFIX}{ m_name } {{ ', end="", file=self._output)
             first = True
             for i in metric["labels"].keys():
                 if first is True:
                     first = False
                 else:
-                    print(', ', end="")
-                print(f'{ i }="{ metric["labels"][i] }"', end="")
-            print(f' }} { metric["value"] }')
+                    print(', ', end="", file=self._output)
+                print(f'{ i }="{ metric["labels"][i] }"', end="", file=self._output)
+            print(f' }} { metric["value"] }', file=self._output)
             prev = metric
 
     def checkpoint(self, collector_name):
@@ -901,7 +920,7 @@ def load_toml(toml_file):
     else:
         return nested_dict
 
-def collect(daemon, miner, metrics, addresses_config):
+def collect(daemon, miner, markets, metrics, addresses_config):
     """ run metrics collection and export """
 
     # miner_id
@@ -1020,8 +1039,8 @@ def collect(daemon, miner, metrics, addresses_config):
     daemon_netpeers = daemon.get("NetPeers", [])
     metrics.add("netpeers_total", value=len(daemon_netpeers["result"]), miner_id=miner_id)
 
-    miner_netpeers = miner.get("NetPeers", [])
-    metrics.add("miner_netpeers_total", value=len(miner_netpeers["result"]), miner_id=miner_id)
+    markets_netpeers = markets.get("NetPeers", [])
+    metrics.add("miner_netpeers_total", value=len(markets_netpeers["result"]), miner_id=miner_id)
     metrics.checkpoint("NetPeers")
 
     # GENERATE NETSTATS XXX Verfier la qualité des stats ... lotus net, API et Grafana sont tous differents
@@ -1030,7 +1049,7 @@ def collect(daemon, miner, metrics, addresses_config):
         metrics.add("net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
         metrics.add("net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
 
-    protocols_list = miner.get("NetBandwidthStatsByProtocol", [])
+    protocols_list = markets.get("NetBandwidthStatsByProtocol", [])
     for protocol in protocols_list["result"]:
         metrics.add("miner_net_protocol_in", value=protocols_list["result"][protocol]["TotalIn"], miner_id=miner_id, protocol=protocol)
         metrics.add("miner_net_protocol_out", value=protocols_list["result"][protocol]["TotalOut"], miner_id=miner_id, protocol=protocol)
@@ -1039,7 +1058,7 @@ def collect(daemon, miner, metrics, addresses_config):
     metrics.add("net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
     metrics.add("net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
 
-    net_list = miner.get("NetBandwidthStats", [])
+    net_list = markets.get("NetBandwidthStats", [])
     metrics.add("miner_net_total_in", value=net_list["result"]["TotalIn"], miner_id=miner_id)
     metrics.add("miner_net_total_out", value=net_list["result"]["TotalOut"], miner_id=miner_id)
     metrics.checkpoint("NetBandwidth")
@@ -1215,7 +1234,7 @@ def collect(daemon, miner, metrics, addresses_config):
     metrics.checkpoint("Storage")
 
     # GENERATE MARKET INFO
-    market_info = miner.get_market_info_enhanced()
+    market_info = markets.get_market_info_enhanced()
     metrics.add("miner_market_info", value=1,
                 miner_id=miner_id,
                 retrieval_consider_online_deals=market_info["retrieval"]["ConsiderOnlineDeals"],
@@ -1232,7 +1251,7 @@ def collect(daemon, miner, metrics, addresses_config):
                 )
 
     # GENERATE  DATA TRANSFERS
-    data_transfers = miner.get_market_data_transfers_enhanced()
+    data_transfers = markets.get_market_data_transfers_enhanced()
     for transfer in data_transfers:
         try:
             voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
@@ -1291,67 +1310,95 @@ def collect(daemon, miner, metrics, addresses_config):
 #     res[addr]["verified_datacap"] = self.daemon.get_json("StateVerifiedClientStatus", [addr, self.tipset_key()])["result"]
 # KeyError: 'result'
 
-def get_api_and_token(api, path):
-    """ generate token and url to connect to both miner and daemon """
-    if api:
-        [token, api] = api.split(":", 1)
+def get_url_and_token(string):
+    """ extract url and token from API format """
+    try:
+        [token, api] = string.split(":", 1)
         [_, _, addr, _, port, proto] = api.split("/", 5)
         url = f"{proto}://{addr}:{port}/rpc/v0"
-        return (url, token)
-    with open(path.joinpath("token"), "r") as f:
-        token = f.read()
-    with open(path.joinpath("api"), "r") as f:
-        [_, _, addr, _, port, proto] = f.read().split("/", 5)
-    url = f"{proto}://{addr}:{port}/rpc/v0"
+    except Exception:
+        raise ValueError(f"malformed API string : {string}")
+
     return (url, token)
 
 def run(args, output):
     """Create all prerequisites object to collect"""
+
+    # Load config file config.toml
+    config_file = args.farcaster_config_folder.joinpath("config.toml")
+
+    try:
+        config = load_toml(config_file)
+    except Exception as exp:
+        raise exp
+
+    # Verify that mandatory variable are in the config file
+    for variable in "miner_api", "markets_api", "daemon_api":
+        if variable not in config.keys():
+            logging.error(f"{variable} not found in {config_file}")
+            logging.info("Re-run the install.sh script or add it to the config file manually")
+            sys.exit(0)
+
     with Metrics(output=output) as metrics:
+        # Create the daemon Object instance
         try:
-            daemon = Daemon(*get_api_and_token(args.daemon_api, args.daemon_path))
-        except Exception  as exp:
-            raise DaemonError from exp
+            daemon = Daemon(*get_url_and_token(config["daemon_api"]))
+        except Exception as exp:
+            raise DaemonError("config value daemon_ip " + str(exp))
 
+        # Create the miner Object instance
         try:
-            miner = Miner(*get_api_and_token(args.miner_api, args.miner_path))
-        except Exception  as exp:
-            raise MinerError from exp
+            miner = Miner(*get_url_and_token(config["miner_api"]))
+        except Exception as exp:
+            raise MinerError("config value miner_ip " + str(exp))
 
-        # Load config file to retrieve external wallet and vlookup
-        addresses_config = load_toml(args.farcaster_path.joinpath("addresses.toml"))
+        # Create the markets object instance
+        try:
+            markets = Markets(*get_url_and_token(config["markets_api"]))
+        except Exception as exp:
+            raise MarketsError("config value markets_ip " + str(exp))
+
+        # Load addresses lookup config file to retrieve external wallet and vlookup
+        addresses_config = load_toml(args.farcaster_config_folder.joinpath("addresses.toml"))
 
         # execute the collector
-        collect(daemon, miner, metrics, addresses_config)
+        collect(daemon, miner, markets, metrics, addresses_config)
 
 def main():
     """ main function """
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action='version', version=VERSION)
-    parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"))
-    parser.add_argument("--daemon-api", default=os.environ.get("FULLNODE_API_INFO"))
-    parser.add_argument("--daemon-path", default=os.environ.get("LOTUS_PATH", Path.home().joinpath(".lotus")), type=Path)
-    parser.add_argument("--miner-api", default=os.environ.get("MINER_API_INFO"))
-    parser.add_argument("--miner-path", default=os.environ.get("LOTUS_MINER_PATH", Path.home().joinpath(".lotusminer")), type=Path)
-    parser.add_argument("--farcaster-path", default=os.environ.get("LOTUS_FARCASTER_PATH", Path.home().joinpath(".lotus-exporter-farcaster")), type=Path)
+    parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"), help="Set log level")
+    parser.add_argument("-c", "--farcaster-config-folder", default=Path.home().joinpath(".lotus-exporter-farcaster"), type=Path, help="Specifiy farcaster config path usually ~/.lotus-exporter-farcaster")
     output = parser.add_mutually_exclusive_group()
     output.add_argument("--file", help="output metrics to file")
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, args.log_level.upper(), None))
+    # Configure the logging output
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=getattr(logging, args.log_level.upper(), None))
 
+    # In case output in a file, use a temporary file
     if args.file and args.file != "-":
         tmp_file = f"{args.file}$$"
         try:
             with open(tmp_file, "w") as f:
                 run(args, output=f)
-        finally:
-            # Always use whatever metrics we have, regardless of exceptions
             os.rename(tmp_file, args.file)
+        except Exception as exp:
+            os.rename(tmp_file, args.file)
+            logging.error(exp)
+            sys.exit(1)
+
         return 0
 
-    return run(args, output=sys.stdout)
+    # If output to STDOUT
+    try:
+        run(args, output=sys.stdout)
+    except Exception as exp:
+        logging.error(exp)
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
