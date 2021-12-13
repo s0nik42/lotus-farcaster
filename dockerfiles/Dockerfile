@@ -8,6 +8,8 @@ ENV FREQUENCY=$FREQUENCY
 
 # Copy lotus-farcaster program and shell script that invokes it to the container
 COPY lotus-exporter-farcaster/lotus-exporter-farcaster.py /usr/local/bin/
+COPY lotus-exporter-farcaster/config.toml /root/.lotus-exporter-farcaster/
+COPY lotus-exporter-farcaster/addresses.toml /root/.lotus-exporter-farcaster/
 COPY dockerfiles/docker_run_script.sh /usr/local/bin/
 
 # Create /data which will hold the output of the lotus-farcaster

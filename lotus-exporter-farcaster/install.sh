@@ -187,9 +187,9 @@ verify_silent_ok "chmod g+w \"$PROMETHEUS_NODE_EXPORTER_FOLDER\""
 TRACELOG=$(chgrp "$IUSER" "$PROMETHEUS_NODE_EXPORTER_FOLDER" 2>&1)
 verify "chgrp \"$IUSER\" \"$PROMETHEUS_NODE_EXPORTER_FOLDER\""
 
-# Install python packages
+# Install python modules
 while true; do
-    read -n 1 -s -p "Install python packages ? " yn
+    read -n 1 -s -p "Install python modules ? " yn
     case $yn in
         [Yy]* ) echo -n "Yes"; TRACELOG=$(pip3 install py-multibase 2>&1); verify "pip3 install py-multibase"; break;;
         [Nn]* ) echo -e "No$SKIP"; break;;
@@ -278,6 +278,7 @@ then
 fi
 
 cat <<EOF
+The configuration has been saved here : $TARGET_CONFIG_PATH/config.toml
 ********************************************************************************
 
 NEXT STEPS : 
