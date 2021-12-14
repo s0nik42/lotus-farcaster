@@ -1,0 +1,6 @@
+[Unit]
+Description=Lotus Exporter Farcaster
+
+[Service]
+ExecStart=/usr/local/bin/lotus-exporter-farcaster.py
+User=lotus

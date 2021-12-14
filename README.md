@@ -1,4 +1,4 @@
-# VERSION 2 is out check our [website](http://twinquasar.io/farcaster.html) for upgrade instructions
+# VERSION 3 is out check our [website](http://twinquasar.io/farcaster.html) for upgrade instructions
 
 [<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/screenshots/screenshot001.png">](https://www.youtube.com/playlist?list=PLqtm8BaRkX-YAiJN2BnQfdXwNGt8ao6Op)
 
