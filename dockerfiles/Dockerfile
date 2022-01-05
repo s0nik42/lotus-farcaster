@@ -20,7 +20,7 @@ RUN chmod 0775 /usr/local/bin/lotus-exporter-farcaster.py
 RUN chmod 0775 /usr/local/bin/docker_run_script.sh
 
 # Make a link from python3.9 to python3
-RUN ln -sv /usr/local/bin/python3.9 /usr/bin/python3
+RUN ln -sfv /usr/local/bin/python3.9 /usr/bin/python3
 
 # Add the lib of python
 RUN python3 -m pip install aiohttp toml py-multibase
