@@ -1161,16 +1161,19 @@ def collect(daemon, miner, markets, metrics, addresses_config):
             deal_weight = int(detail["result"]["DealWeight"])
             qa_power = daemon.qa_power_for_weight(size, duration, deal_weight, verified_weight)
 
-        creation_date = detail["result"]["Log"][0]["Timestamp"]
+        creation_date = ""
         packed_date = ""
         finalized_date = ""
+
+        if detail["result"]["Log"]:
+            creation_date = detail["result"]["Log"][0]["Timestamp"]
 
         for log in range(len(detail["result"]["Log"])):
             if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorPacked":
                 packed_date = detail["result"]["Log"][log]["Timestamp"]
             if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorFinalized":
                 finalized_date = detail["result"]["Log"][log]["Timestamp"]
-        if detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
+        if detail["result"]["Log"] and detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
             pledged = 1
         else:
             pledged = 0
