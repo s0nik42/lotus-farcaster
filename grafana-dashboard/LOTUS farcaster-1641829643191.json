@@ -89,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1639170398998,
+  "iteration": 1641829624206,
   "links": [
     {
       "asDropdown": false,
@@ -765,7 +765,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 388
+                "value": 476
               }
             ]
           },
@@ -2025,7 +2025,7 @@
         ]
       },
       "gridPos": {
-        "h": 10,
+        "h": 11,
         "w": 8,
         "x": 12,
         "y": 18
@@ -2287,6 +2287,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
+          "exemplar": false,
           "expr": "lotus_netpeers_total{miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
@@ -2296,7 +2297,9 @@
           "refId": "A"
         },
         {
+          "exemplar": true,
           "expr": "lotus_miner_netpeers_total{miner_id=\"$miner_id\"}",
+          "instant": true,
           "interval": "",
           "legendFormat": "Miner",
           "refId": "B"
@@ -3364,10 +3367,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 3,
         "w": 8,
         "x": 12,
-        "y": 28
+        "y": 29
       },
       "id": 851,
       "options": {
@@ -3795,13 +3798,70 @@
           "color": {
             "mode": "thresholds"
           },
-          "custom": {
-            "align": null,
-            "displayMode": "auto",
-            "filterable": true
-          },
-          "decimals": 0,
           "mappings": [],
+          "min": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 1,
+        "x": 8,
+        "y": 33
+      },
+      "id": 974,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.1.2",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count(lotus_miner_pending_publish_deal{miner_id=\"$miner_id\"})",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Pending Publish",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "transformations": [],
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
           "noValue": "-",
           "thresholds": {
             "mode": "absolute",
@@ -3818,185 +3878,36 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Sector Creation"
+              "options": "CommitFailed"
             },
             "properties": [
-              {
-                "id": "custom.width",
-                "value": 129
-              },
-              {
-                "id": "unit",
-                "value": "dateTimeAsIsoNoDateIfToday"
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "0": {
-                        "text": "-"
-                      }
-                    },
-                    "type": "value"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Sector"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 73
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Worker"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 76
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Status"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 72
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "seal/v0/addpiece": {
-                        "text": "AP"
-                      },
-                      "seal/v0/commit/1": {
-                        "text": "C1"
-                      },
-                      "seal/v0/commit/2": {
-                        "text": "C2"
-                      },
-                      "seal/v0/fetch": {
-                        "text": "GET"
-                      },
-                      "seal/v0/finalize": {
-                        "text": "Finalize"
-                      },
-                      "seal/v0/precommit/1": {
-                        "text": "PC1"
-                      },
-                      "seal/v0/precommit/2": {
-                        "text": "PC2"
-                      }
-                    },
-                    "type": "value"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Duration"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 86
-              },
-              {
-                "id": "unit",
-                "value": "dthms"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Deals"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 84
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "rgba(115, 191, 105, 0)",
+                      "color": "red",
                       "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 1
                     }
                   ]
                 }
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "0": {
-                        "text": "-"
-                      }
-                    },
-                    "type": "value"
-                  }
-                ]
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "Remaining"
+              "options": "Expired"
             },
             "properties": [
-              {
-                "id": "custom.width",
-                "value": 98
-              },
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "rgba(115, 191, 105, 0)",
+                      "color": "green",
                       "value": null
                     },
                     {
@@ -4005,7 +3916,7 @@
                     },
                     {
                       "color": "red",
-                      "value": 300
+                      "value": 10
                     }
                   ]
                 }
@@ -4015,249 +3926,130 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Action"
+              "options": "To Upgrade"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 80
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "0": {
-                        "text": "Running"
-                      },
-                      "1": {
-                        "text": "Idle"
-                      },
-                      "99": {
-                        "text": "Idle"
-                      }
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
                     },
-                    "type": "value"
-                  }
-                ]
-              },
-              {
-                "id": "noValue",
-                "value": "Idle"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "worker_host"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 121
+                    {
+                      "color": "orange",
+                      "value": 30
+                    },
+                    {
+                      "color": "green",
+                      "value": 60
+                    }
+                  ]
+                }
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 13,
-        "w": 8,
-        "x": 8,
+        "h": 3,
+        "w": 7,
+        "x": 9,
         "y": 33
       },
-      "id": 469,
+      "id": 67,
       "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Remaining"
-          }
-        ]
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
       },
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "# Retourne la liste de tout les jobs \"Running\" enrichi aves les informations deals and creation date recuperer depuis la liste des sectors\nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} * on (sector_id) group_left(deals,creation_date) (lotus_miner_sector_state{miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
-          "format": "table",
+          "exemplar": true,
+          "expr": "count by (state) (lotus_miner_sector_state{miner_id=\"$miner_id\"})",
+          "format": "time_series",
           "hide": false,
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "",
-          "refId": "A"
+          "legendFormat": "{{state}}",
+          "refId": "D"
         },
         {
-          "expr": "# Retourne la liste des jobs en cours \"Running\" pour lesquels il n'a a pas encore des secteurs (Les premiers AP par exemple) \nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} unless on (sector_id) (lotus_miner_sector_state{miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
-          "format": "table",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "expr": "# Calcul do 95 centile sur 30 jours des jobs par Worker et Par task et calcul le temps restant pour chacun des jobs\nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} - on(worker_host,task) group_left()(quantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\",worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task))",
-          "format": "table",
+          "exemplar": true,
+          "expr": "count(lotus_miner_sector_state{state=\"Proving\", miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"})",
           "hide": false,
           "instant": true,
           "interval": "",
-          "legendFormat": "",
-          "refId": "C"
+          "legendFormat": "Expired",
+          "refId": "A"
         },
         {
-          "expr": "# Retourne la date de creation du secteur\nlotus_miner_sector_event{miner_id=\"$miner_id\",event_type=\"creation\"} and on(sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} ",
-          "format": "table",
+          "exemplar": true,
+          "expr": "count(lotus_miner_sector_state{miner_id=\"$miner_id\", to_upgrade=\"True\" })",
+          "hide": false,
           "instant": true,
           "interval": "",
-          "legendFormat": "",
-          "refId": "D"
+          "legendFormat": "To Upgrade",
+          "refId": "B"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "RUNNING Sealing Sectors",
       "transformations": [
         {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "calculateField",
+          "id": "seriesToColumns",
           "options": {
-            "alias": "Sector Creation",
-            "binary": {
-              "left": "Value #D",
-              "operator": "*",
-              "reducer": "sum",
-              "right": "1000"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            },
-            "replaceFields": false
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Action",
-            "binary": {
-              "left": "run_wait",
-              "operator": "+",
-              "reducer": "sum",
-              "right": "0"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            }
+            "byField": "Time"
           }
         },
         {
           "id": "organize",
           "options": {
             "excludeByName": {
-              "Action": true,
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "Time 3": true,
-              "Value #A": false,
-              "Value #B": true,
-              "Value #C": false,
-              "Value #D": true,
-              "__name__": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "creation_date": true,
-              "deals": false,
-              "event_type": true,
-              "instance": true,
-              "instance 1": true,
-              "instance 2": true,
-              "instance 3": true,
-              "job": true,
-              "job 1": true,
-              "job 2": true,
-              "job 3": true,
-              "job_id": false,
-              "job_id 1": false,
-              "job_id 2": true,
-              "job_start_time": true,
-              "job_start_time 1": true,
-              "job_start_time 2": true,
-              "miner_id": true,
-              "miner_id 1": true,
-              "miner_id 2": true,
-              "miner_id 3": true,
-              "pledged": true,
-              "run_wait": true,
-              "run_wait 1": false,
-              "run_wait 2": true,
-              "sector": false,
-              "sector 1": true,
-              "sector 2": true,
-              "sector_id": false,
-              "state": true,
-              "task": false,
-              "task 1": false,
-              "task 2": true,
-              "worker 1": false,
-              "worker 2": true
+              "Proving": false,
+              "Removed": false,
+              "Time": true
             },
             "indexByName": {
-              "Action": 3,
-              "Deals": 7,
-              "Sector Creation": 17,
-              "Time": 9,
-              "Value #A": 4,
-              "Value #C": 5,
-              "Value #D": 16,
-              "__name__": 14,
-              "deals": 8,
-              "event_type": 15,
-              "instance": 10,
-              "job": 11,
-              "job_id": 18,
-              "job_start_time": 13,
-              "miner_id": 12,
-              "run_wait": 6,
-              "sector_id": 0,
-              "task": 2,
-              "worker_host": 1
+              "Committing": 5,
+              "Expired": 6,
+              "PreCommit1": 2,
+              "PreCommit2": 3,
+              "Proving": 1,
+              "Removed": 7,
+              "Time": 0,
+              "WaitSeed": 4
             },
             "renameByName": {
-              "Action": "",
-              "Sector Creation": "",
-              "Time": "",
-              "Value #A": "Duration",
-              "Value #B": "",
-              "Value #C": "Remaining",
-              "Value #D": "Creation Date",
-              "creation_date": "",
-              "deals": "Deals",
-              "job_id": "ID",
-              "job_id 1": "ID",
-              "job_start_time": "",
-              "miner_id": "",
-              "run_wait": "",
-              "run_wait 1": "Action",
-              "sector": "Sector",
-              "sector_id": "Sector",
-              "state": "",
-              "task": "Status",
-              "task 1": "",
-              "worker": "Worker",
-              "worker 1": "Worker",
-              "worker_host": "Worker"
+              "Committing": "C2",
+              "Expired": "Expired",
+              "PreCommit1": "PC1",
+              "PreCommit2": "PC2",
+              "Proving": "Proving",
+              "Removed": "Removed",
+              "seal/v0/addpiece": "AP",
+              "seal/v0/commit/2": "C2",
+              "seal/v0/precommit/1": "PC1",
+              "seal/v0/precommit/2": "PC2"
             }
           }
         }
       ],
-      "type": "table"
+      "type": "stat"
     },
     {
       "datasource": null,
@@ -4578,7 +4370,7 @@
         ]
       },
       "gridPos": {
-        "h": 13,
+        "h": 9,
         "w": 8,
         "x": 16,
         "y": 33
@@ -4834,6 +4626,355 @@
             "displayMode": "auto",
             "filterable": false
           },
+          "mappings": [
+            {
+              "options": {
+                "True": {
+                  "color": "green",
+                  "index": 0
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Client"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 138
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Verified"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 82
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Size"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 132
+              },
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Price"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Miner Collateral"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 166
+              },
+              {
+                "id": "unit",
+                "value": "Fil"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Publish at"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 108
+              },
+              {
+                "id": "unit",
+                "value": "dateTimeAsIsoNoDateIfToday"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Duration"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "unit",
+                "value": "dtdurations"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 36
+      },
+      "id": 969,
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.1.2",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "lotus_miner_pending_publish_deal{miner_id=\"$miner_id\"}",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Pending publish deals",
+      "transformations": [
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "duration_in_sec",
+            "binary": {
+              "left": "duration",
+              "operator": "*",
+              "reducer": "sum",
+              "right": "30"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "publish_in_seconds",
+              "operator": "*",
+              "reducer": "sum",
+              "right": "1000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "publish_start",
+              "operator": "*",
+              "reducer": "sum",
+              "right": "1000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "publish_start * 1000",
+              "operator": "+",
+              "reducer": "sum",
+              "right": "publish_in_seconds * 1000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "provider_collateral",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "1000000000000000000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "Value / 1000000000000000000": false,
+              "__name__": true,
+              "duration": true,
+              "duration_in_sec": false,
+              "host": true,
+              "instance": true,
+              "job": true,
+              "job_start_time": true,
+              "miner_id": true,
+              "msg_method": true,
+              "price_per_epoch": true,
+              "provider_collateral": true,
+              "publish_in_seconds": true,
+              "publish_in_seconds * 1": true,
+              "publish_in_seconds * 1000": true,
+              "publish_in_seconds * 1000000": true,
+              "publish_start": true,
+              "publish_start * 1": false,
+              "publish_start * 1 + publish_start * 1 * 1000": false,
+              "publish_start * 1000": true,
+              "run_wait": false,
+              "worker": false
+            },
+            "indexByName": {
+              "Time": 6,
+              "Value": 11,
+              "__name__": 7,
+              "client": 0,
+              "deal_is_verified": 1,
+              "deal_size": 2,
+              "duration": 14,
+              "duration_in_sec": 15,
+              "instance": 8,
+              "job": 9,
+              "miner_id": 10,
+              "price_per_epoch": 4,
+              "provider_collateral": 5,
+              "provider_collateral / 1000000000000000000": 19,
+              "publish_in_seconds": 12,
+              "publish_in_seconds * 1000": 16,
+              "publish_start": 13,
+              "publish_start * 1000": 17,
+              "publish_start * 1000 + publish_in_seconds * 1000": 18,
+              "total_price": 3
+            },
+            "renameByName": {
+              "Duration in micro": "Duration",
+              "Time": "",
+              "Value": "",
+              "Value / 1000000000000000000": "Value in Fil",
+              "__name__": "",
+              "client": "Client",
+              "deal_is_verified": "Verified",
+              "deal_size": "Size",
+              "duration": "",
+              "duration_in_sec": "Duration",
+              "from": "From",
+              "gasfeecap": "Gas Fee Cap",
+              "gaslimit": "Gas Limit",
+              "gaspremium": "Gas Premium",
+              "host": "",
+              "method": "Method",
+              "msg_from": "From",
+              "msg_gasfeecap": "Gas Feecap",
+              "msg_gaslimit": "Gas Limit",
+              "msg_gaspremium": "Gas Premium",
+              "msg_method": "",
+              "msg_method_type": "Method",
+              "msg_nonce": "Nonce",
+              "msg_to": "To",
+              "msg_to_actor_type": "To actor",
+              "msg_value": "Value",
+              "nonce": "Nonce",
+              "price_per_epoch": "Price",
+              "provider_collateral": "Collateral",
+              "provider_collateral / 1000000000000000000": "Miner Collateral",
+              "publish_in_seconds * 1": "",
+              "publish_start": "",
+              "publish_start * 1": "Publish at",
+              "publish_start * 1 + publish_start * 1": "",
+              "publish_start * 1 + publish_start * 1 * 1000": "",
+              "publish_start * 1000": "",
+              "publish_start * 1000 + publish_in_seconds * 1": "Publish at",
+              "publish_start * 1000 + publish_in_seconds * 1000": "Publish at",
+              "publish_start + publish_in_seconds": "Published at",
+              "run_wait": "State",
+              "sector": "Sector",
+              "task": "Task",
+              "to": "To",
+              "total_price": "Total Price",
+              "value": "Value",
+              "worker": "Worker"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": null,
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "displayMode": "auto",
+            "filterable": false
+          },
           "decimals": 1,
           "mappings": [],
           "min": 0,
@@ -4881,7 +5022,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 81
+                "value": 130
               }
             ]
           },
@@ -4893,7 +5034,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 113
+                "value": 132
               }
             ]
           },
@@ -4993,7 +5134,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 107
+                "value": 125
               }
             ]
           },
@@ -5223,49 +5364,59 @@
             "displayMode": "auto",
             "filterable": true
           },
-          "decimals": 2,
-          "mappings": [
-            {
-              "options": {
-                "c2": {
-                  "text": "C2"
-                },
-                "pc1": {
-                  "text": "PC1"
-                },
-                "pc2": {
-                  "text": "PC2"
-                }
-              },
-              "type": "value"
-            }
-          ],
+          "decimals": 0,
+          "mappings": [],
           "noValue": "-",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "blue",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
-          "unit": "dtdhms"
+          "unit": "none"
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "Task"
+              "options": "Sector Creation"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 82
+                "value": 129
+              },
+              {
+                "id": "unit",
+                "value": "dateTimeAsIsoNoDateIfToday"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "-"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sector"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 73
               }
             ]
           },
@@ -5277,18 +5428,6 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 79
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "on 30d"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
                 "value": 76
               }
             ]
@@ -5296,12 +5435,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Task"
+              "options": "Status"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 80
+                "value": 72
               },
               {
                 "id": "mappings",
@@ -5328,9 +5467,6 @@
                       },
                       "seal/v0/precommit/2": {
                         "text": "PC2"
-                      },
-                      "seal/v0/unsealread": {
-                        "text": "Unseal"
                       }
                     },
                     "type": "value"
@@ -5342,25 +5478,29 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Variation"
+              "options": "Duration"
             },
             "properties": [
               {
-                "id": "unit",
-                "value": "percentunit"
+                "id": "custom.width",
+                "value": 86
               },
               {
-                "id": "custom.width",
-                "value": 105
+                "id": "unit",
+                "value": "dthms"
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "Variation"
+              "options": "Deals"
             },
             "properties": [
+              {
+                "id": "custom.width",
+                "value": 84
+              },
               {
                 "id": "custom.displayMode",
                 "value": "color-background"
@@ -5371,205 +5511,56 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "rgba(115, 191, 105, 0)",
                       "value": null
                     },
                     {
-                      "color": "rgba(87, 148, 242, 0)",
-                      "value": -0.05
-                    },
-                    {
-                      "color": "orange",
-                      "value": 0.05
-                    },
-                    {
-                      "color": "red",
-                      "value": 0.1
+                      "color": "green",
+                      "value": 1
                     }
                   ]
                 }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "-"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "on 2d"
+              "options": "Remaining"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 72
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 6,
-        "x": 0,
-        "y": 46
-      },
-      "id": 324,
-      "interval": "1d",
-      "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "Task"
-          }
-        ]
-      },
-      "pluginVersion": "8.1.2",
-      "repeat": null,
-      "targets": [
-        {
-          "expr": "# Calcul do 95 centile sur 30 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task)",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{ legend }} - {{ worker_host }}",
-          "refId": "A"
-        },
-        {
-          "expr": "# Calcul do 95 centile sur 2 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[2d]) > 1)) by (worker_host,task)",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{ legend }} - {{ worker_host }}",
-          "refId": "B"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Average Job time",
-      "transformations": [
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "binary": {
-              "left": "Value #B",
-              "operator": "/",
-              "reducer": "sum",
-              "right": "Value #A"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Variation",
-            "binary": {
-              "left": "Value #B / Value #A",
-              "operator": "-",
-              "reducer": "sum",
-              "right": "1"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value #B / Value #A": true,
-              "task": false
-            },
-            "indexByName": {
-              "Time": 0,
-              "Value #A": 5,
-              "Value #B": 4,
-              "legend": 2,
-              "task": 3,
-              "worker": 1
-            },
-            "renameByName": {
-              "Value": "Average (30days)",
-              "Value #A": "on 30d",
-              "Value #B": "on 2d",
-              "Value #B / Value #A": "",
-              "legend": "Task",
-              "task": "Task",
-              "worker": "Worker",
-              "worker_host": "Worker"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": null,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "min": 0,
-          "noValue": "-",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+                "value": 98
+              },
               {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "CommitFailed"
-            },
-            "properties": [
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "red",
-                      "value": null
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Expired"
-            },
-            "properties": [
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
+                      "color": "rgba(115, 191, 105, 0)",
                       "value": null
                     },
                     {
@@ -5578,7 +5569,7 @@
                     },
                     {
                       "color": "red",
-                      "value": 10
+                      "value": 300
                     }
                   ]
                 }
@@ -5588,130 +5579,250 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "To Upgrade"
+              "options": "Action"
             },
             "properties": [
               {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
+                "id": "custom.width",
+                "value": 80
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Running"
+                      },
+                      "1": {
+                        "text": "Idle"
+                      },
+                      "99": {
+                        "text": "Idle"
+                      }
                     },
-                    {
-                      "color": "orange",
-                      "value": 30
-                    },
-                    {
-                      "color": "green",
-                      "value": 60
-                    }
-                  ]
-                }
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "noValue",
+                "value": "Idle"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "worker_host"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 121
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 3,
-        "w": 7,
-        "x": 6,
-        "y": 46
+        "h": 16,
+        "w": 8,
+        "x": 16,
+        "y": 42
       },
-      "id": 67,
+      "id": 469,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Remaining"
+          }
+        ]
       },
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "count by (state) (lotus_miner_sector_state{miner_id=\"$miner_id\"})",
-          "format": "time_series",
+          "exemplar": true,
+          "expr": "# Retourne la liste de tout les jobs \"Running\" enrichi aves les informations deals and creation date recuperer depuis la liste des sectors\nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} * on (sector_id) group_left(deals,creation_date) (lotus_miner_sector_state{miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
+          "format": "table",
           "hide": false,
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{state}}",
-          "refId": "D"
-        },
-        {
-          "exemplar": true,
-          "expr": "count(lotus_miner_sector_state{state=\"Proving\", miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"})",
-          "hide": false,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "Expired",
+          "legendFormat": "",
           "refId": "A"
         },
         {
-          "exemplar": true,
-          "expr": "count(lotus_miner_sector_state{miner_id=\"$miner_id\", to_upgrade=\"True\" })",
+          "expr": "# Retourne la liste des jobs en cours \"Running\" pour lesquels il n'a a pas encore des secteurs (Les premiers AP par exemple) \nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} unless on (sector_id) (lotus_miner_sector_state{miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "expr": "# Calcul do 95 centile sur 30 jours des jobs par Worker et Par task et calcul le temps restant pour chacun des jobs\nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} - on(worker_host,task) group_left()(quantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\",worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task))",
+          "format": "table",
           "hide": false,
           "instant": true,
           "interval": "",
-          "legendFormat": "To Upgrade",
-          "refId": "B"
+          "legendFormat": "",
+          "refId": "C"
+        },
+        {
+          "expr": "# Retourne la date de creation du secteur\nlotus_miner_sector_event{miner_id=\"$miner_id\",event_type=\"creation\"} and on(sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} ",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "D"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Number of sectors",
+      "title": "RUNNING Sealing Sectors",
       "transformations": [
         {
-          "id": "seriesToColumns",
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "calculateField",
           "options": {
-            "byField": "Time"
+            "alias": "Sector Creation",
+            "binary": {
+              "left": "Value #D",
+              "operator": "*",
+              "reducer": "sum",
+              "right": "1000"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": false
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Action",
+            "binary": {
+              "left": "run_wait",
+              "operator": "+",
+              "reducer": "sum",
+              "right": "0"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
           }
         },
         {
           "id": "organize",
           "options": {
             "excludeByName": {
-              "Proving": false,
-              "Removed": false,
-              "Time": true
+              "Action": true,
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Value #A": false,
+              "Value #B": true,
+              "Value #C": false,
+              "Value #D": true,
+              "__name__": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "creation_date": true,
+              "deals": false,
+              "event_type": true,
+              "instance": true,
+              "instance 1": true,
+              "instance 2": true,
+              "instance 3": true,
+              "job": true,
+              "job 1": true,
+              "job 2": true,
+              "job 3": true,
+              "job_id": false,
+              "job_id 1": false,
+              "job_id 2": true,
+              "job_start_time": true,
+              "job_start_time 1": true,
+              "job_start_time 2": true,
+              "miner_id": true,
+              "miner_id 1": true,
+              "miner_id 2": true,
+              "miner_id 3": true,
+              "pledged": true,
+              "run_wait": true,
+              "run_wait 1": false,
+              "run_wait 2": true,
+              "sector": false,
+              "sector 1": true,
+              "sector 2": true,
+              "sector_id": false,
+              "state": true,
+              "task": false,
+              "task 1": false,
+              "task 2": true,
+              "worker 1": false,
+              "worker 2": true
             },
             "indexByName": {
-              "Committing": 7,
-              "Expired": 2,
-              "PreCommit1": 4,
-              "PreCommit2": 5,
-              "Proving": 1,
-              "Removed": 8,
-              "Time": 0,
-              "WaitDeals": 3,
-              "WaitSeed": 6
+              "Action": 3,
+              "Deals": 7,
+              "Sector Creation": 17,
+              "Time": 9,
+              "Value #A": 4,
+              "Value #C": 5,
+              "Value #D": 16,
+              "__name__": 14,
+              "deals": 8,
+              "event_type": 15,
+              "instance": 10,
+              "job": 11,
+              "job_id": 18,
+              "job_start_time": 13,
+              "miner_id": 12,
+              "run_wait": 6,
+              "sector_id": 0,
+              "task": 2,
+              "worker_host": 1
             },
             "renameByName": {
-              "Committing": "C2",
-              "PreCommit1": "PC1",
-              "PreCommit2": "PC2",
-              "Proving": "Proving",
-              "Removed": "Removed",
-              "seal/v0/addpiece": "AP",
-              "seal/v0/commit/2": "C2",
-              "seal/v0/precommit/1": "PC1",
-              "seal/v0/precommit/2": "PC2"
+              "Action": "",
+              "Sector Creation": "",
+              "Time": "",
+              "Value #A": "Duration",
+              "Value #B": "",
+              "Value #C": "Remaining",
+              "Value #D": "Creation Date",
+              "creation_date": "",
+              "deals": "Deals",
+              "job_id": "ID",
+              "job_id 1": "ID",
+              "job_start_time": "",
+              "miner_id": "",
+              "run_wait": "",
+              "run_wait 1": "Action",
+              "sector": "Sector",
+              "sector_id": "Sector",
+              "state": "",
+              "task": "Status",
+              "task 1": "",
+              "worker": "Worker",
+              "worker 1": "Worker",
+              "worker_host": "Worker"
             }
           }
         }
       ],
-      "type": "stat"
+      "type": "table"
     },
     {
       "datasource": null,
@@ -5764,7 +5875,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 83
+                "value": 68
               }
             ]
           },
@@ -5776,7 +5887,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 77
+                "value": 79
               }
             ]
           },
@@ -5816,7 +5927,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 164
+                "value": 121
               },
               {
                 "id": "unit",
@@ -5832,7 +5943,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 104
+                "value": 67
               },
               {
                 "id": "unit",
@@ -5848,7 +5959,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 132
+                "value": 106
               }
             ]
           },
@@ -5860,7 +5971,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 255
+                "value": 90
               },
               {
                 "id": "unit",
@@ -5904,21 +6015,25 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 115
+                "value": 121
               },
               {
                 "id": "unit",
-                "value": "dtdhms"
+                "value": "dtdurations"
+              },
+              {
+                "id": "decimals",
+                "value": 1
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 12,
-        "w": 11,
-        "x": 13,
-        "y": 46
+        "h": 15,
+        "w": 8,
+        "x": 8,
+        "y": 43
       },
       "id": 776,
       "options": {
@@ -6061,6 +6176,8 @@
           "id": "organize",
           "options": {
             "excludeByName": {
+              "Client Collateral": true,
+              "Price / Epoch": true,
               "Time": true,
               "Value": true,
               "__name__": true,
@@ -6113,6 +6230,310 @@
               "miner_id": "",
               "sector_id": "Sector",
               "state": "State"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": null,
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "displayMode": "auto",
+            "filterable": true
+          },
+          "decimals": 2,
+          "mappings": [
+            {
+              "options": {
+                "c2": {
+                  "text": "C2"
+                },
+                "pc1": {
+                  "text": "PC1"
+                },
+                "pc2": {
+                  "text": "PC2"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "noValue": "-",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "dtdhms"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Task"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 82
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Worker"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 79
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "on 30d"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 76
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Task"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "seal/v0/addpiece": {
+                        "text": "AP"
+                      },
+                      "seal/v0/commit/1": {
+                        "text": "C1"
+                      },
+                      "seal/v0/commit/2": {
+                        "text": "C2"
+                      },
+                      "seal/v0/fetch": {
+                        "text": "GET"
+                      },
+                      "seal/v0/finalize": {
+                        "text": "Finalize"
+                      },
+                      "seal/v0/precommit/1": {
+                        "text": "PC1"
+                      },
+                      "seal/v0/precommit/2": {
+                        "text": "PC2"
+                      },
+                      "seal/v0/unsealread": {
+                        "text": "Unseal"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Variation"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "custom.width",
+                "value": 62
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Variation"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "rgba(87, 148, 242, 0)",
+                      "value": -0.05
+                    },
+                    {
+                      "color": "orange",
+                      "value": 0.05
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "on 2d"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 72
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 4,
+        "x": 0,
+        "y": 46
+      },
+      "id": 324,
+      "interval": "1d",
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Task"
+          }
+        ]
+      },
+      "pluginVersion": "8.1.2",
+      "repeat": null,
+      "targets": [
+        {
+          "expr": "# Calcul do 95 centile sur 30 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{ legend }} - {{ worker_host }}",
+          "refId": "A"
+        },
+        {
+          "expr": "# Calcul do 95 centile sur 2 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[2d]) > 1)) by (worker_host,task)",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{ legend }} - {{ worker_host }}",
+          "refId": "B"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Average Job time",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "binary": {
+              "left": "Value #B",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "Value #A"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Variation",
+            "binary": {
+              "left": "Value #B / Value #A",
+              "operator": "-",
+              "reducer": "sum",
+              "right": "1"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #B / Value #A": true,
+              "task": false
+            },
+            "indexByName": {
+              "Time": 0,
+              "Value #A": 5,
+              "Value #B": 4,
+              "legend": 2,
+              "task": 3,
+              "worker": 1
+            },
+            "renameByName": {
+              "Value": "Average (30days)",
+              "Value #A": "on 30d",
+              "Value #B": "on 2d",
+              "Value #B / Value #A": "",
+              "legend": "Task",
+              "task": "Task",
+              "worker": "Worker",
+              "worker_host": "Worker"
             }
           }
         }
@@ -6187,7 +6608,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 98
+                "value": 86
               },
               {
                 "id": "thresholds",
@@ -6223,7 +6644,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 105
+                "value": 77
               },
               {
                 "id": "mappings",
@@ -6301,17 +6722,17 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 192
+                "value": 175
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 9,
-        "w": 7,
-        "x": 6,
-        "y": 49
+        "h": 12,
+        "w": 4,
+        "x": 4,
+        "y": 46
       },
       "id": 169,
       "options": {
@@ -6513,14 +6934,16 @@
           "refId": "C"
         },
         {
-          "expr": "avg((lotus_miner_worker_mem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_physical_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_mem_physical{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
+          "exemplar": true,
+          "expr": "avg((lotus_miner_worker_ram_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_ram_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_ram_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
           "instant": true,
           "interval": "",
           "legendFormat": "RAM",
           "refId": "B"
         },
         {
-          "expr": "avg((lotus_miner_worker_mem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_vmem_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_mem_physical{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_swap{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
+          "exemplar": true,
+          "expr": "avg((lotus_miner_worker_vmem_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_vmem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_vmem_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -9043,7 +9466,7 @@
       }
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "datasource": null,
       "gridPos": {
         "h": 1,
@@ -9052,713 +9475,723 @@
         "y": 103
       },
       "id": 89,
-      "panels": [],
+      "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 0,
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 104
+          },
+          "hiddenSeries": false,
+          "id": 100,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.1.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeat": "worker_host",
+          "repeatDirection": "v",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:435",
+              "alias": "Total",
+              "color": "#F2495C",
+              "fill": 0,
+              "linewidth": 2,
+              "stack": false
+            }
+          ],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Used",
+              "refId": "D"
+            },
+            {
+              "expr": "lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "interval": "",
+              "legendFormat": "Free",
+              "refId": "B"
+            },
+            {
+              "expr": "lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Total",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "$worker_host - CPU",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transformations": [],
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:177",
+              "decimals": 0,
+              "format": "none",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:178",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 0,
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 104
+          },
+          "hiddenSeries": false,
+          "id": 116,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.1.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeat": "worker_host",
+          "repeatDirection": "v",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:435",
+              "alias": "Total",
+              "color": "#F2495C",
+              "fill": 0,
+              "linewidth": 2,
+              "stack": false
+            }
+          ],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Used",
+              "refId": "D"
+            },
+            {
+              "expr": "lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Free",
+              "refId": "B"
+            },
+            {
+              "expr": "lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Total",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "$worker_host - GPU",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transformations": [],
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:177",
+              "decimals": 0,
+              "format": "none",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:178",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 0,
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 12,
+            "y": 104
+          },
+          "hiddenSeries": false,
+          "id": 137,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.1.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeat": "worker_host",
+          "repeatDirection": "v",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:435",
+              "alias": "Total",
+              "color": "#F2495C",
+              "fill": 0,
+              "linewidth": 2,
+              "stack": false
+            }
+          ],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_ram_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Used",
+              "refId": "D"
+            },
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_ram_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Reserved",
+              "refId": "B"
+            },
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_ram_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-(lotus_miner_worker_ram_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_ram_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Free",
+              "refId": "C"
+            },
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_ram_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Total",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "$worker_host - Physical Memory",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transformations": [],
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:177",
+              "decimals": 0,
+              "format": "bytes",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:178",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 0,
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 18,
+            "y": 104
+          },
+          "hiddenSeries": false,
+          "id": 138,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.1.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeat": "worker_host",
+          "repeatDirection": "v",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:435",
+              "alias": "Total",
+              "color": "#F2495C",
+              "fill": 0,
+              "linewidth": 2,
+              "stack": false
+            }
+          ],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_vmem_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Used",
+              "refId": "D"
+            },
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_vmem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Reserved",
+              "refId": "C"
+            },
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_vmem_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_vmem_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_vmem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Free",
+              "refId": "B"
+            },
+            {
+              "exemplar": true,
+              "expr": "lotus_miner_worker_vmem_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Total",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "$worker_host - VMEM (RAM + Swap)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transformations": [],
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:177",
+              "decimals": 0,
+              "format": "bytes",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:178",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        }
+      ],
       "repeat": "worker",
       "title": "Worker - Ressources",
       "type": "row"
     },
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 0,
-        "y": 104
-      },
-      "hiddenSeries": false,
-      "id": 100,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.1.2",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeat": "worker_host",
-      "repeatDirection": "v",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:435",
-          "alias": "Total",
-          "color": "#F2495C",
-          "fill": 0,
-          "linewidth": 2,
-          "stack": false
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Used",
-          "refId": "D"
-        },
-        {
-          "expr": "lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "interval": "",
-          "legendFormat": "Free",
-          "refId": "B"
-        },
-        {
-          "expr": "lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Total",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "$worker_host - CPU",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transformations": [],
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:177",
-          "decimals": 0,
-          "format": "none",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "$$hashKey": "object:178",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 6,
-        "y": 104
-      },
-      "hiddenSeries": false,
-      "id": 116,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.1.2",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeat": "worker_host",
-      "repeatDirection": "v",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:435",
-          "alias": "Total",
-          "color": "#F2495C",
-          "fill": 0,
-          "linewidth": 2,
-          "stack": false
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Used",
-          "refId": "D"
-        },
-        {
-          "expr": "lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Free",
-          "refId": "B"
-        },
-        {
-          "expr": "lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Total",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "$worker_host - GPU",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transformations": [],
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:177",
-          "decimals": 0,
-          "format": "none",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "$$hashKey": "object:178",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 12,
-        "y": 104
-      },
-      "hiddenSeries": false,
-      "id": 137,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.1.2",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeat": "worker_host",
-      "repeatDirection": "v",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:435",
-          "alias": "Total",
-          "color": "#F2495C",
-          "fill": 0,
-          "linewidth": 2,
-          "stack": false
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "lotus_miner_worker_mem_physical_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Used",
-          "refId": "D"
-        },
-        {
-          "expr": "lotus_miner_worker_mem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Reserved",
-          "refId": "B"
-        },
-        {
-          "expr": "lotus_miner_worker_mem_physical{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-(lotus_miner_worker_mem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_physical_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Free",
-          "refId": "C"
-        },
-        {
-          "expr": "lotus_miner_worker_mem_physical{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Total",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "$worker_host - Physical Memory",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transformations": [],
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:177",
-          "decimals": 0,
-          "format": "bytes",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "$$hashKey": "object:178",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 18,
-        "y": 104
-      },
-      "hiddenSeries": false,
-      "id": 138,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.1.2",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeat": "worker_host",
-      "repeatDirection": "v",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:435",
-          "alias": "Total",
-          "color": "#F2495C",
-          "fill": 0,
-          "linewidth": 2,
-          "stack": false
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "lotus_miner_worker_mem_vmem_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Used",
-          "refId": "D"
-        },
-        {
-          "expr": "lotus_miner_worker_mem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Reserved",
-          "refId": "C"
-        },
-        {
-          "expr": "(lotus_miner_worker_mem_physical{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_swap{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})-(lotus_miner_worker_mem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_vmem_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Free",
-          "refId": "B"
-        },
-        {
-          "expr": "lotus_miner_worker_mem_physical{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_mem_swap{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Total",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "$worker_host - VMem (Physical + Swap)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transformations": [],
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:177",
-          "decimals": 0,
-          "format": "bytes",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "$$hashKey": "object:178",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "collapsed": false,
+      "collapsed": true,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 124
+        "y": 104
       },
       "id": 196,
-      "panels": [],
+      "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 0,
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 105
+          },
+          "hiddenSeries": false,
+          "id": 222,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "maxPerRow": 4,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.1.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeat": "storage_id",
+          "repeatDirection": "h",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:435",
+              "alias": "Total",
+              "color": "#F2495C",
+              "fill": 0,
+              "linewidth": 2,
+              "stack": false
+            }
+          ],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "lotus_miner_storage_capacity{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_available{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_reserved{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Used",
+              "refId": "D"
+            },
+            {
+              "expr": "lotus_miner_storage_reserved{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Reserved",
+              "refId": "A"
+            },
+            {
+              "expr": "lotus_miner_storage_available{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "interval": "",
+              "legendFormat": "Free",
+              "refId": "B"
+            },
+            {
+              "expr": "lotus_miner_storage_capacity{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "interval": "",
+              "legendFormat": "Total",
+              "refId": "C"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "$storage_id",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transformations": [],
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:177",
+              "decimals": 0,
+              "format": "bytes",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:178",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        }
+      ],
       "title": "Storage",
       "type": "row"
     },
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "decimals": 0,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 0,
-        "y": 125
-      },
-      "hiddenSeries": false,
-      "id": 222,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "maxPerRow": 4,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.1.2",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "repeat": "storage_id",
-      "repeatDirection": "h",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:435",
-          "alias": "Total",
-          "color": "#F2495C",
-          "fill": 0,
-          "linewidth": 2,
-          "stack": false
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "lotus_miner_storage_capacity{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_available{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_reserved{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Used",
-          "refId": "D"
-        },
-        {
-          "expr": "lotus_miner_storage_reserved{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Reserved",
-          "refId": "A"
-        },
-        {
-          "expr": "lotus_miner_storage_available{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
-          "interval": "",
-          "legendFormat": "Free",
-          "refId": "B"
-        },
-        {
-          "expr": "lotus_miner_storage_capacity{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
-          "interval": "",
-          "legendFormat": "Total",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "$storage_id",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transformations": [],
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:177",
-          "decimals": 0,
-          "format": "bytes",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "$$hashKey": "object:178",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 135
+        "y": 105
       },
       "id": 4,
       "panels": [],
@@ -9784,7 +10217,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 136
+        "y": 106
       },
       "hiddenSeries": false,
       "id": 814,
@@ -9888,7 +10321,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 136
+        "y": 106
       },
       "hiddenSeries": false,
       "id": 76,
@@ -9993,7 +10426,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 136
+        "y": 106
       },
       "hiddenSeries": false,
       "id": 78,
@@ -10096,7 +10529,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 143
+        "y": 113
       },
       "hiddenSeries": false,
       "id": 45,
@@ -10225,7 +10658,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 143
+        "y": 113
       },
       "hiddenSeries": false,
       "id": 357,
@@ -10374,7 +10807,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 143
+        "y": 113
       },
       "hiddenSeries": false,
       "id": 69,
@@ -10531,7 +10964,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 150
+        "y": 120
       },
       "hiddenSeries": false,
       "id": 290,
@@ -10677,7 +11110,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 150
+        "y": 120
       },
       "hiddenSeries": false,
       "id": 742,
@@ -10913,7 +11346,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 150
+        "y": 120
       },
       "hiddenSeries": false,
       "id": 704,
@@ -11106,7 +11539,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 157
+        "y": 127
       },
       "hiddenSeries": false,
       "id": 640,
@@ -11207,7 +11640,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 157
+        "y": 127
       },
       "hiddenSeries": false,
       "id": 819,
@@ -11429,7 +11862,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 157
+        "y": 127
       },
       "id": 863,
       "options": {
@@ -11601,7 +12034,7 @@
         "h": 14,
         "w": 4,
         "x": 0,
-        "y": 164
+        "y": 134
       },
       "id": 921,
       "options": {
@@ -11906,5 +12339,5 @@
   "timezone": "",
   "title": "LOTUS farcaster",
   "uid": "oKwajZpMk",
-  "version": 804
+  "version": 834
 }

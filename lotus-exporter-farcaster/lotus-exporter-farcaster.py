@@ -70,6 +70,7 @@ from functools import wraps
 import toml
 import multibase
 import aiohttp
+import datetime
 
 VERSION = "v3.0.1"
 
@@ -390,7 +391,7 @@ class Daemon(Lotus):
         return self.__known_addresses.update(*args, **kwargs)
 
     @Error.wrap
-    def __address_lookup(self, input_addr):
+    def address_lookup(self, input_addr):
         """ The function lookup an address and return the corresponding name from the chain or from the know_addresses table"""
 
         # if its in the lookup table, return it straight Away
@@ -568,8 +569,8 @@ class Daemon(Lotus):
             }
         else:
             deal = deal_info["Proposal"]
-            deal["Client"] = self.__address_lookup(deal["Client"])
-            deal["Provider"] = self.__address_lookup(deal["Provider"])
+            deal["Client"] = self.address_lookup(deal["Client"])
+            deal["Provider"] = self.address_lookup(deal["Provider"])
         return deal
 
     @Error.wrap
@@ -590,10 +591,10 @@ class Daemon(Lotus):
                 msg["Message"]["actor_type"], msg["Message"]["method_type"] = self.__get_message_type(msg["Message"]["To"], msg["Message"]["Method"])
 
                 # Prettry print To address
-                msg["Message"]["display_to"] = self.__address_lookup(msg["Message"]["To"])
+                msg["Message"]["display_to"] = self.address_lookup(msg["Message"]["To"])
 
                 # Prettyprint From addresses
-                msg["Message"]["display_from"] = self.__address_lookup(msg["Message"]["From"])
+                msg["Message"]["display_from"] = self.address_lookup(msg["Message"]["From"])
 
                 msg_list.append(msg["Message"])
 
@@ -627,7 +628,7 @@ class Daemon(Lotus):
             # Add address to the list
             res[addr] = {}
             res[addr]["balance"] = balance
-            res[addr]["name"] = self.__address_lookup(addr)
+            res[addr]["name"] = self.address_lookup(addr)
 
             try:
                 verified_result = self.get("StateVerifiedClientStatus", [addr, self.tipset_key()])
@@ -786,6 +787,7 @@ class Metrics():
         "miner_net_protocol_out"                    : {"type" : "counter", "help": "return output per protocol net"},
         "miner_net_total_in"                        : {"type" : "counter", "help": "return input net"},
         "miner_net_total_out"                       : {"type" : "counter", "help": "return output net"},
+        "miner_pending_publish_deal"                : {"type" : "gauge", "help": "pending deal detail"},
         "miner_sector_event"                        : {"type" : "gauge", "help": "contains important event of the sector life"},
         "miner_sector_sealing_deals_info"           : {"type" : "gauge", "help": "contains information related to deals that are not in Proving and Removed state."},
         "miner_sector_state"                        : {"type" : "gauge", "help": "contains current state, nb of deals, is pledged in labels"},
@@ -801,11 +803,12 @@ class Metrics():
         "miner_worker_gpu_used"                     : {"type" : "gauge", "help": "is the GPU used by lotus"},
         "miner_worker_id"                           : {"type" : "gauge", "help": "All lotus worker information prfer to use workername than workerid which is changing at each restart"},
         "miner_worker_job"                          : {"type" : "gauge", "help": "status of each individual job running on the workers. Value is the duration"},
-        "miner_worker_mem_physical"                 : {"type" : "gauge", "help": "worker server RAM"},
-        "miner_worker_mem_physical_used"            : {"type" : "gauge", "help": "worker minimal memory used"},
-        "miner_worker_mem_reserved"                 : {"type" : "gauge", "help": "worker memory reserved by lotus"},
-        "miner_worker_mem_swap"                     : {"type" : "gauge", "help": "server SWAP"},
-        "miner_worker_mem_vmem_used"                : {"type" : "gauge", "help": "worker maximum memory used"},
+        "miner_worker_ram_total"                    : {"type" : "gauge", "help": "worker server RAM"},
+        "miner_worker_ram_tasks"                    : {"type" : "gauge", "help": "worker minimal memory used"},
+        "miner_worker_ram_reserved"                 : {"type" : "gauge", "help": "worker memory reserved by lotus"},
+        "miner_worker_vmem_total"                   : {"type" : "gauge", "help": "server Physical RAM + Swap"},
+        "miner_worker_vmem_tasks"                   : {"type" : "gauge", "help": "worker VMEM used by on-going tasks"},
+        "miner_worker_vmem_reserved"                : {"type" : "gauge", "help": "worker VMEM reserved by lotus"},
         "mpool_local_message"                       : {"type" : "gauge", "help": "local message details"},
         "mpool_local_total"                         : {"type" : "gauge", "help": "return number of messages pending in local mpool"},
         "mpool_total"                               : {"type" : "gauge", "help": "return number of message pending in mpool"},
@@ -1068,23 +1071,110 @@ def collect(daemon, miner, markets, metrics, addresses_config):
     # XXX 1.2.1 introduce a new worker_id format. Later we should delete it, its a useless info.
     #print("# HELP lotus_miner_worker_id All lotus worker information prfer to use workername than workerid which is changing at each restart")
     #print("# TYPE lotus_miner_worker_id gauge")
+
+#
+# 37
+                 # TOTAL RAM
+# 36             ramTotal := stat.Info.Resources.MemPhysical
+
+                 # RAM USED
+# 35             ramTasks := stat.MemUsedMin
+
+                # RAM RESERVED
+# 34             ramUsed := stat.Info.Resources.MemUsed
+# 33             var ramReserved uint64 = 0
+# 32             if ramUsed > ramTasks {
+# 31                 ramReserved = ramUsed - ramTasks
+# 30             }
+# 29             ramBar := barString(float64(ramTotal), float64(ramReserved), float64(ramTasks))
+# 28
+# 27             fmt.Printf("\tRAM:  [%s] %d%% %s/%s\n", ramBar,
+# 26                 (ramTasks+ramReserved)*100/stat.Info.Resources.MemPhysical,
+# 25                 types.SizeStr(types.NewInt(ramTasks+ramUsed)),
+# 24                 types.SizeStr(types.NewInt(stat.Info.Resources.MemPhysical)))
+# 23
+# 22             vmemTotal := stat.Info.Resources.MemPhysical + stat.Info.Resources.MemSwap
+# 21             vmemTasks := stat.MemUsedMax
+# 20             vmemUsed := stat.Info.Resources.MemUsed + stat.Info.Resources.MemSwapUsed
+# 19             var vmemReserved uint64 = 0
+# 18             if vmemUsed > vmemTasks {
+# 17                 vmemReserved = vmemUsed - vmemTasks
+# 16             }
+# 15             vmemBar := barString(float64(vmemTotal), float64(vmemReserved), float64(vmemTasks))
+# 14
+# 13             fmt.Printf("\tVMEM: [%s] %d%% %s/%s\n", vmemBar,
+# 12                 (vmemTasks+vmemReserved)*100/vmemTotal,
+# 11                 types.SizeStr(types.NewInt(vmemTasks+vmemReserved)),
+# 10                 types.SizeStr(types.NewInt(vmemTotal)))
+#  9
+#
+
     worker_list = {}
-    for val in workerstats["result"].items():
-        val = val[1]
-        info = val["Info"]
-        worker_host = info["Hostname"]
-        mem_physical = info["Resources"]["MemPhysical"]
-        mem_swap = info["Resources"]["MemSwap"]
-        mem_reserved = info["Resources"]["MemReserved"]
-        cpus = info["Resources"]["CPUs"]
-        gpus = len(info["Resources"]["GPUs"])
-        mem_used_min = val["MemUsedMin"]
-        mem_used_max = val["MemUsedMax"]
-        if val["GpuUsed"]:
+    for (worker_id, stat) in workerstats["result"].items():
+        worker_host = stat["Info"]["Hostname"]
+        cpus = stat["Info"]["Resources"]["CPUs"]
+        gpus = len(stat["Info"]["Resources"]["GPUs"])
+
+        # SMALL HACK FOR RETROCOMPATIBILITY CAN BE REMOVED IN NEW LOTUS VERSION WE NEED TO CALCULATE MEMRESERVED
+        if "MemReserved" not in stat["Info"]["Resources"].keys():
+            # TOTAL RAM AVAILABLE
+            ram_total = stat["Info"]["Resources"]["MemPhysical"]
+
+            # TOTAL RAM USED BY ONGOING TASKS
+            ram_tasks = stat["MemUsedMin"]
+
+            # TOTAL RAM USED (really used + RESERVED
+            ram_used = stat["Info"]["Resources"]["MemUsed"]
+
+            # TOTAL RAM RESERVED
+            ram_reserved = 0
+            if ram_used > ram_tasks:
+                ram_reserved = ram_used - ram_tasks
+
+            # TOTAL VMEM
+            vmem_total = ram_total + stat["Info"]["Resources"]["MemSwap"]
+
+            # TOTAL VMEM USED BY ONGOING TASKS
+            vmem_tasks = stat["MemUsedMax"]
+
+            # TOTAL VMEM RESERVER + REALLY USED
+            vmem_used = ram_used + stat["Info"]["Resources"]["MemSwapUsed"]
+
+            # TOTAL VMEM RESERVED
+            vmem_reserved = 0
+            if vmem_used > vmem_tasks:
+                vmem_reserved = vmem_used - vmem_tasks
+
+        else:
+            # TOTAL RAM AVAILABLE
+            ram_total = stat["Info"]["Resources"]["MemPhysical"]
+
+            # TOTAL RAM USED BY ONGOING TASKS
+            ram_tasks = stat["MemUsedMin"]
+
+            # TOTAL RAM RESERVED
+            ram_reserved = stat["Info"]["Resources"]["MemReserved"]
+
+            # TOTAL RAM USED (really used + RESERVED
+            ram_used = ram_tasks + ram_reserved
+
+            # TOTAL VMEM
+            vmem_total = ram_total + stat["Info"]["Resources"]["MemSwap"]
+
+            # TOTAL VMEM USED BY ONGOING TASKS
+            vmem_tasks = stat["MemUsedMax"]
+
+            # TOTAL VMEM USED REALLY USED + RESERVED // HERE THERE IS NO SWAP RESERVED
+            vmem_used = vmem_tasks + ram_reserved
+
+            # TOTAL MEM RESERVER, HERE ONLY RAM
+            vmem_reserved = ram_reserved
+
+        if stat["GpuUsed"]:
             gpu_used = 1
         else:
             gpu_used = 0
-        cpu_used = val["CpuUse"]
+        cpu_used = stat["CpuUse"]
 
         # TEST to avoid duplicate entries incase 2 workers on the same machine. This could be remove once PL will include URL in WorkerStats API call
         if worker_host not in worker_list.keys():
@@ -1092,11 +1182,12 @@ def collect(daemon, miner, markets, metrics, addresses_config):
 
             metrics.add("miner_worker_cpu", value=cpus, miner_id=miner_id, worker_host=worker_host)
             metrics.add("miner_worker_gpu", value=gpus, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_physical", value=mem_physical, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_swap", value=mem_swap, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_physical_used", value=mem_used_min, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_vmem_used", value=mem_used_max, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_ram_total", value=ram_total, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_ram_reserved", value=ram_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_ram_tasks", value=ram_tasks, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_vmem_total", value=vmem_total, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_vmem_reserved", value=vmem_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_vmem_tasks", value=vmem_tasks, miner_id=miner_id, worker_host=worker_host)
             metrics.add("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
             metrics.add("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
     metrics.checkpoint("Workers")
@@ -1269,8 +1360,34 @@ def collect(daemon, miner, markets, metrics, addresses_config):
                     message=transfer["Message"].replace("\n", "  "),
                     other_peer=transfer["OtherPeer"],
                     stages=transfer["Stages"])
-    metrics.checkpoint("Market")
 
+    # GENERATE PENDINGDEALS
+    pending_publish_deals = markets.get("MarketPendingDeals", [])["result"]
+
+    if pending_publish_deals and len(pending_publish_deals["Deals"]) > 0:
+        # Remove microseconds because not managed by python then convert to epoch
+        publish_start = pending_publish_deals["PublishPeriodStart"]
+        plus_position = publish_start.find("+")
+        publish_start = publish_start[:plus_position-3] + publish_start[plus_position:]
+        publish_start = datetime.datetime.strptime(publish_start, '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%s')
+
+        # Clean PublishINseconds
+        publish_in_seconds = pending_publish_deals["PublishPeriod"] / 1000000000
+
+        for deal in pending_publish_deals["Deals"]:
+            deal_size = deal["Proposal"]["PieceSize"]
+            deal_is_verified = deal["Proposal"]["VerifiedDeal"]
+            client = daemon.address_lookup(deal["Proposal"]["Client"])
+            duration = deal["Proposal"]["EndEpoch"]-deal["Proposal"]["StartEpoch"]
+            price_per_epoch = deal["Proposal"]["StoragePricePerEpoch"]
+            total_price = int(duration) * int(price_per_epoch)
+            provider_collateral = deal["Proposal"]["ProviderCollateral"]
+            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, deal_is_verified=deal_is_verified, client=client, duration=duration, price_per_epoch=price_per_epoch, total_price=total_price, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds)
+
+
+
+    metrics.checkpoint("Market")
+    # XXX RAJOUTER : PublishPeriodStart / PublishINseconds / Expected collateral Against ProviderCollateral
 
     # GENERATE DEALS INFOS
     # XXX NOT FINISHED
