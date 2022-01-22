@@ -26,6 +26,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+# Release v3.0.2
+#   - Add --debug
 
 # Release v3
 #   - NEW Expired sectors (dashboard + exporter)
@@ -67,12 +69,13 @@ import asyncio
 import argparse
 import logging
 from functools import wraps
+import datetime
 import toml
 import multibase
 import aiohttp
-import datetime
+import traceback
 
-VERSION = "v3.0.1"
+VERSION = "v3.0.2"
 
 #################################################################################
 # CLASS DEFINITION
@@ -1486,6 +1489,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action='version', version=VERSION)
+    parser.add_argument("--debug", action="store_true", help="Enable debug and python traceback")
     parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"), help="Set log level")
     parser.add_argument("-c", "--farcaster-config-folder", default=Path.home().joinpath(".lotus-exporter-farcaster"), type=Path, help="Specifiy farcaster config path usually ~/.lotus-exporter-farcaster")
     output = parser.add_mutually_exclusive_group()
@@ -1513,9 +1517,11 @@ def main():
     try:
         run(args, output=sys.stdout)
     except Exception as exp:
-        logging.error(exp)
+        if args.debug:
+            logging.error(traceback.format_exc())
+        else:
+            logging.error(exp)
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
