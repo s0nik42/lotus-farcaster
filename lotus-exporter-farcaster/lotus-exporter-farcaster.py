@@ -1255,7 +1255,12 @@ def collect(daemon, miner, markets, metrics, addresses_config):
             deal_weight = int(detail["result"]["DealWeight"])
             qa_power = daemon.qa_power_for_weight(size, duration, deal_weight, verified_weight)
 
-        creation_date = detail["result"]["Log"][0]["Timestamp"]
+        try:
+            creation_date = detail["result"]["Log"][0]["Timestamp"]
+        except Exception as exp:
+            logging.warning(f"Sector {i} : cannot find sector creation date : {exp}")
+            creation_date = 0
+            pass
         packed_date = ""
         finalized_date = ""
 
@@ -1264,10 +1269,15 @@ def collect(daemon, miner, markets, metrics, addresses_config):
                 packed_date = detail["result"]["Log"][log]["Timestamp"]
             if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorFinalized":
                 finalized_date = detail["result"]["Log"][log]["Timestamp"]
-        if detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
+        try:
+            if detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
+                pledged = 1
+            else:
+                pledged = 0
+        except Exception as exp:
+            logging.warning(f"Sector {i} : cannot find sector kind, default to CC : {exp}")
             pledged = 1
-        else:
-            pledged = 0
+            pass
         metrics.add("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], to_upgrade=detail["result"]["ToUpgrade"], pledged=pledged, deals=deals)
         metrics.add("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
         metrics.add("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
