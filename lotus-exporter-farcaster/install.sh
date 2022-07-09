@@ -160,7 +160,7 @@ fi
 
 
 # Install Debian requirements
-PKG_LIST="python3-toml python3-aiohttp python3-pip prometheus-node-exporter"
+PKG_LIST="python3-toml python3-aiohttp python3-pip python3-requests-toolbelt prometheus-node-exporter"
 while true; do
     read -n 1 -s -p "Install required debian packages ($PKG_LIST) ? " yn
     case $yn in
@@ -191,7 +191,7 @@ verify "chgrp \"$IUSER\" \"$PROMETHEUS_NODE_EXPORTER_FOLDER\""
 while true; do
     read -n 1 -s -p "Install python modules ? " yn
     case $yn in
-        [Yy]* ) echo -n "Yes"; TRACELOG=$(pip3 install py-multibase 2>&1); verify "pip3 install py-multibase"; break;;
+        [Yy]* ) echo -n "Yes"; TRACELOG=$(pip3 install py-multibase gql 2>&1); verify "pip3 install py-multibase gql"; break;;
         [Nn]* ) echo -e "No$SKIP"; break;;
         * ) read -t 0.01 junk; echo -e "\nPlease answer Y or N." ;;
     esac

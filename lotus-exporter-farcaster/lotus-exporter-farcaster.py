@@ -26,6 +26,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+# Release v4.0.0
+# Boost Support
+# Introducing graphql
+
 # Release v3.0.2
 #   - Add --debug
 
@@ -74,6 +78,9 @@ import toml
 import multibase
 import aiohttp
 import traceback
+from gql import gql, Client
+from gql.transport.aiohttp import AIOHTTPTransport
+from gql.transport.aiohttp import log as aiohttp_logger
 
 VERSION = "v3.0.2"
 
@@ -107,23 +114,27 @@ class MarketsError(Error):
 class DaemonError(Error):
     """Customer Exception to identify error coming from the daemon. Used  for the dashboard Status panel"""
 
+class BoostError(Error):
+    """Customer Exception to identify error coming from boost. Used  for the dashboard Status panel"""
+
+
 class Lotus():
     """Lotus class is a common parent class to Miner and Daemon Class"""
     target = "lotus"
     Error = Error
 
     actor_type = {
-        b"system":           "System",
-        b"init":             "Init",
-        b"reward":           "Reward",
-        b"cron":             "Cron",
-        b"storagepower":     "StoragePower",
-        b"storagemarket":    "StorageMarket",
-        b"verifiedregistry": "VerifiedRegistry",
-        b"account":          "Account",
-        b"multisig":         "Multisig",
-        b"paymentchannel":   "PaymentChannel",
-        b"storageminer":     "StorageMiner"
+        "system":           "System",
+        "init":             "Init",
+        "reward":           "Reward",
+        "cron":             "Cron",
+        "storagepower":     "StoragePower",
+        "storagemarket":    "StorageMarket",
+        "verifiedregistry": "VerifiedRegistry",
+        "account":          "Account",
+        "multisig":         "Multisig",
+        "paymentchannel":   "PaymentChannel",
+        "storageminer":     "StorageMiner"
     }
 
     message_type = {"Account":
@@ -351,18 +362,6 @@ class Lotus():
         quality = (scaled_up_weighted_sum_space_time / (sector_space_time * quality_base_multiplier))
         return int(size * quality) >> sector_quality_precision
 
-    @classmethod
-    def _get_actor_type(cls, actor_code):
-        try:
-            a_type = multibase.decode(actor_code)[10:]
-        except Exception:
-            raise Exception(f'Cannot decode actor_code {actor_code}')
-
-        if a_type in cls.actor_type.keys():
-            return cls.actor_type[a_type]
-
-        raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
-
 class Daemon(Lotus):
     """Lotus Daemon class """
     target = "daemon"
@@ -370,6 +369,15 @@ class Daemon(Lotus):
     __chain_head = None
     __known_addresses = {}
     __local_wallet_list = None
+    actor_cid = {}
+
+    @Error.wrap
+    def __init__(self, url, token):
+        self.url = url
+        self.token = token
+        self.network_version = self.get("StateNetworkVersion", [self.tipset_key()])["result"]
+        for actor, cid in self.get("StateActorCodeCIDs", [self.network_version])["result"].items():
+            self.actor_cid[cid["/"]] = actor
 
     @Error.wrap
     def chain_head(self):
@@ -392,6 +400,18 @@ class Daemon(Lotus):
     def add_known_addresses(self, *args, **kwargs):
         """ Add new addresses to the vlookup database"""
         return self.__known_addresses.update(*args, **kwargs)
+
+    @Error.wrap
+    def _get_actor_type(self, actor_code):
+        try:
+            a_type = self.actor_cid[actor_code]
+        except Exception:
+            raise Exception(f'Cannot decode actor_code {actor_code}')
+
+        if a_type in self.__class__.actor_type.keys():
+            return self.__class__.actor_type[a_type]
+
+        raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
 
     @Error.wrap
     def address_lookup(self, input_addr):
@@ -756,6 +776,41 @@ class Markets(Lotus):
             res[deal_id]["Status"] = self.transfer_status_name[transfer["Status"]]
         return res
 
+    @Error.wrap
+    def get_pending_publish_deals(self):
+        pass
+
+class Boost(Markets):
+    """ Boost class"""
+    target = "boost"
+    Error = BoostError
+
+
+    def __init__(self, url, token, graphql_url):
+        self.url = url
+        self.token = token
+        self.graphql_url = graphql_url
+
+        #Disable graphql log , to verbose by default
+        aiohttp_logger.setLevel(logging.WARNING)
+
+    @Error.wrap
+    def get_pending_publish_deals(self):
+        query = gql("query { dealPublish { Start Period Deals { PieceSize ClientAddress StartEpoch EndEpoch ProviderCollateral } } }")
+        result = self.get_graphql(query)
+        return result
+
+    @Error.wrap
+    def get_graphql(self, query):
+        """Send a graphql query to boost, this function is not async yet"""
+
+        transport = AIOHTTPTransport(url=self.graphql_url)
+        client = Client(transport=transport, fetch_schema_from_transport=False)
+
+        result = client.execute(query)
+
+        return result
+
 
 class Metrics():
     """ This class manage prometheus metrics formatting / checking / print """
@@ -847,7 +902,9 @@ class Metrics():
         if exc_type is None:
             success = 1
         else:
-            if exc_type == MarketsError:
+            if exc_type == BoostError:
+                success = -4
+            elif exc_type == MarketsError:
                 success = -3
             elif exc_type == MinerError:
                 success = -2
@@ -1370,34 +1427,54 @@ def collect(daemon, miner, markets, metrics, addresses_config):
                     is_initiator=transfer["IsInitiator"],
                     is_sender=transfer["IsSender"],
                     voucher=voucher,
-                    message=transfer["Message"].replace("\n", "  "),
+                    message=transfer["Message"].replace("\n", "  ").replace('"', " "),
                     other_peer=transfer["OtherPeer"],
                     stages=transfer["Stages"])
 
     # GENERATE PENDINGDEALS
-    pending_publish_deals = markets.get("MarketPendingDeals", [])["result"]
+    pending_publish_deals = markets.get_pending_publish_deals()["dealPublish"]
 
     if pending_publish_deals and len(pending_publish_deals["Deals"]) > 0:
         # Remove microseconds because not managed by python then convert to epoch
-        publish_start = pending_publish_deals["PublishPeriodStart"]
+        publish_start = pending_publish_deals["Start"]
         plus_position = publish_start.find("+")
         publish_start = publish_start[:plus_position-3] + publish_start[plus_position:]
         publish_start = datetime.datetime.strptime(publish_start, '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%s')
 
         # Clean PublishINseconds
-        publish_in_seconds = pending_publish_deals["PublishPeriod"] / 1000000000
+        publish_in_seconds = pending_publish_deals["Period"] / 1000000000
 
         for deal in pending_publish_deals["Deals"]:
-            deal_size = deal["Proposal"]["PieceSize"]
-            deal_is_verified = deal["Proposal"]["VerifiedDeal"]
-            client = daemon.address_lookup(deal["Proposal"]["Client"])
-            duration = deal["Proposal"]["EndEpoch"]-deal["Proposal"]["StartEpoch"]
-            price_per_epoch = deal["Proposal"]["StoragePricePerEpoch"]
-            total_price = int(duration) * int(price_per_epoch)
-            provider_collateral = deal["Proposal"]["ProviderCollateral"]
-            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, deal_is_verified=deal_is_verified, client=client, duration=duration, price_per_epoch=price_per_epoch, total_price=total_price, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds)
+            deal_size = int(deal["PieceSize"]["n"])
+            client = daemon.address_lookup(deal["ClientAddress"])
+            duration = int(deal["EndEpoch"]["n"])-int(deal["StartEpoch"]["n"])
+            provider_collateral = int(deal["ProviderCollateral"]["n"])
+            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, client=client, duration=duration, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds)
 
-
+#XXXBOOST    pending_publish_deals = markets.get("MarketPendingDeals", [])["result"]
+#    pending_publish_deals= undef
+#
+#    if pending_publish_deals and len(pending_publish_deals["Deals"]) > 0:
+#        # Remove microseconds because not managed by python then convert to epoch
+#        publish_start = pending_publish_deals["PublishPeriodStart"]
+#        plus_position = publish_start.find("+")
+#        publish_start = publish_start[:plus_position-3] + publish_start[plus_position:]
+#        publish_start = datetime.datetime.strptime(publish_start, '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%s')
+#
+#        # Clean PublishINseconds
+#        publish_in_seconds = pending_publish_deals["PublishPeriod"] / 1000000000
+#
+#        for deal in pending_publish_deals["Deals"]:
+#            deal_size = deal["Proposal"]["PieceSize"]
+#            deal_is_verified = deal["Proposal"]["VerifiedDeal"]
+#            client = daemon.address_lookup(deal["Proposal"]["Client"])
+#            duration = deal["Proposal"]["EndEpoch"]-deal["Proposal"]["StartEpoch"]
+#            price_per_epoch = deal["Proposal"]["StoragePricePerEpoch"]
+#            total_price = int(duration) * int(price_per_epoch)
+#            provider_collateral = deal["Proposal"]["ProviderCollateral"]
+#            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, deal_is_verified=deal_is_verified, client=client, duration=duration, price_per_epoch=price_per_epoch, total_price=total_price, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds)
+#
+#
 
     metrics.checkpoint("Market")
     # XXX RAJOUTER : PublishPeriodStart / PublishINseconds / Expected collateral Against ProviderCollateral
@@ -1463,7 +1540,7 @@ def run(args, output):
         raise exp
 
     # Verify that mandatory variable are in the config file
-    for variable in "miner_api", "markets_api", "daemon_api":
+    for variable in "miner_api", "markets_api", "daemon_api", "markets_type":
         if variable not in config.keys():
             logging.error(f"{variable} not found in {config_file}")
             logging.info("Re-run the install.sh script or add it to the config file manually")
@@ -1483,10 +1560,20 @@ def run(args, output):
             raise MinerError("config value miner_ip " + str(exp))
 
         # Create the markets object instance
-        try:
-            markets = Markets(*get_url_and_token(config["markets_api"]))
-        except Exception as exp:
-            raise MarketsError("config value markets_ip " + str(exp))
+        if config["markets_type"] == "boost":
+            if "boost_graphql" not in config.keys():
+                raise BoostError("config value boost_graphql not set")
+            if "boost_api" not in config.keys():
+                raise BoostError("config value boost_api not set")
+            try:
+                markets = Boost(*get_url_and_token(config["boost_api"]), config["boost_graphql"])
+            except Exception as exp:
+                raise BoostError("config value boost_api " + str(exp))
+        else:
+            try:
+                markets = Markets(*get_url_and_token(config["markets_api"]))
+            except Exception as exp:
+                raise MarketsError("config value markets_api " + str(exp))
 
         # Load addresses lookup config file to retrieve external wallet and vlookup
         addresses_config = load_toml(args.farcaster_config_folder.joinpath("addresses.toml"))

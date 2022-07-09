@@ -5,3 +5,9 @@
 miner_api = "<MINER_API_STRING>"
 markets_api = "<MARKETS_API_STRING>"
 daemon_api = "<DAEMON_API_STRING>"
+boost_api = "<BOOST_API_STRING>"
+boost_graphql = "<BOOST_GRAPHQL_URL_STRING>"
+
+# supported markets node type : lotus | boost
+markets_type = "<MARKETS_TYPE_STRING>"
+
