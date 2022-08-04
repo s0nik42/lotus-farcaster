@@ -334,7 +334,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}",
+          "expr": "lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -343,7 +343,7 @@
         },
         {
           "exemplar": true,
-          "expr": "rate(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}[5m])",
+          "expr": "rate(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}[5m])",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -499,7 +499,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}[5m]))",
+          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}[5m]))",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -568,7 +568,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "count by (other_peer)(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"`True\"})",
+          "expr": "count by (other_peer)(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"`True\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -663,7 +663,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}[5m]))",
+          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"True\"}[5m]))",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -835,7 +835,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}",
+          "expr": "lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -844,7 +844,7 @@
         },
         {
           "exemplar": true,
-          "expr": "rate(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}[5m])",
+          "expr": "rate(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}[5m])",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -993,7 +993,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}[5m]))",
+          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}[5m]))",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1062,7 +1062,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "count by (other_peer)(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"})",
+          "expr": "count by (other_peer)(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1157,7 +1157,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}[5m]))",
+          "expr": "sum by (other_peer)(rate(lotus_miner_data_transfers{job=\"$job\",miner_id=\"$miner_id\", status=\"Ongoing\", is_sender=\"False\"}[5m]))",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -1419,7 +1419,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_chain_height{miner_id=\"$miner_id\"}",
+          "expr": "lotus_chain_height{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1548,7 +1548,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_chain_sync_status{miner_id=\"$miner_id\"}",
+          "expr": "lotus_chain_sync_status{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1656,7 +1656,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_power{miner_id=\"$miner_id\", scope=\"miner\",power_type=\"QualityAdjPower\"}",
+          "expr": "lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\",power_type=\"QualityAdjPower\"}",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1665,7 +1665,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(lotus_miner_sector_qa_power{miner_id=\"$miner_id\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"})",
+          "expr": "sum(lotus_miner_sector_qa_power{job=\"$job\",miner_id=\"$miner_id\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"})",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -1771,7 +1771,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"RawBytePower\"}",
+          "expr": "lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"RawBytePower\"}",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1780,7 +1780,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum( lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\", is_live=\"True\"} * on(miner_id) group_left () lotus_miner_info_sector_size{miner_id=\"$miner_id\"})",
+          "expr": "sum( lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\", is_live=\"True\"} * on(miner_id) group_left () lotus_miner_info_sector_size{job=\"$job\",miner_id=\"$miner_id\"})",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -1873,7 +1873,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_power_mining_eligibility{miner_id=\"$miner_id\"}",
+          "expr": "lotus_power_mining_eligibility{job=\"$job\",miner_id=\"$miner_id\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "Mining",
@@ -2043,7 +2043,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_mpool_local_message{miner_id=\"$miner_id\"}",
+          "expr": "lotus_mpool_local_message{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -2196,14 +2196,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$miner_id\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$miner_id\"}",
           "interval": "",
           "legendFormat": "Miner",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$owner_addr\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$owner_addr\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -2211,7 +2211,7 @@
           "refId": "C"
         },
         {
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$worker_addr\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$worker_addr\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -2219,7 +2219,7 @@
           "refId": "B"
         },
         {
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$control0_addr\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$control0_addr\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -2288,7 +2288,7 @@
       "targets": [
         {
           "exemplar": false,
-          "expr": "lotus_netpeers_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_netpeers_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -2298,7 +2298,7 @@
         },
         {
           "exemplar": true,
-          "expr": "lotus_miner_netpeers_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_netpeers_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "Miner",
@@ -2366,7 +2366,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_mpool_local_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_mpool_local_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -2434,7 +2434,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_mpool_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_mpool_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2495,7 +2495,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_wallet_locked_balance{miner_id=\"$miner_id\"}",
+          "expr": "lotus_wallet_locked_balance{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2590,7 +2590,7 @@
       "pluginVersion": "7.3.1",
       "targets": [
         {
-          "expr": "count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"}) - count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0) - count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0)",
+          "expr": "count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"}) - count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0) - count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0)",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -2598,14 +2598,14 @@
           "refId": "A"
         },
         {
-          "expr": "count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0)",
+          "expr": "count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0)",
           "instant": true,
           "interval": "",
           "legendFormat": "Verified",
           "refId": "B"
         },
         {
-          "expr": "count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0)",
+          "expr": "count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0)",
           "instant": true,
           "interval": "",
           "legendFormat": "Non Verified",
@@ -2696,7 +2696,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "1/(sum(lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*2*5/60)",
+          "expr": "1/(sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*2*5/60)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -2705,7 +2705,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*5*60*2*24",
+          "expr": "sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*5*60*2*24",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -2714,7 +2714,7 @@
           "refId": "B"
         },
         {
-          "expr": "sum(lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})",
+          "expr": "sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -2797,7 +2797,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_chain_basefee{miner_id=\"$miner_id\"}",
+          "expr": "lotus_chain_basefee{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3039,7 +3039,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_deadline_active_start{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_start{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -3047,7 +3047,7 @@
           "refId": "A"
         },
         {
-          "expr": "lotus_miner_deadline_active_sectors_all{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_sectors_all{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -3055,7 +3055,7 @@
           "refId": "B"
         },
         {
-          "expr": "lotus_miner_deadline_active_sectors_recovering{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_sectors_recovering{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -3063,7 +3063,7 @@
           "refId": "C"
         },
         {
-          "expr": "lotus_miner_deadline_active_sectors_faulty{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_sectors_faulty{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -3071,7 +3071,7 @@
           "refId": "D"
         },
         {
-          "expr": "lotus_miner_deadline_active_partitions{miner_id=\"$miner_id\"}-lotus_miner_deadline_active_partitions_proven{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_partitions{job=\"$job\",miner_id=\"$miner_id\"}-lotus_miner_deadline_active_partitions_proven{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -3241,7 +3241,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "sum(lotus_wallet_balance {miner_id=\"$miner_id\"})",
+          "expr": "sum(lotus_wallet_balance {job=\"$job\",miner_id=\"$miner_id\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3250,7 +3250,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(lotus_wallet_locked_balance{miner_id=\"$miner_id\"})",
+          "expr": "sum(lotus_wallet_locked_balance{job=\"$job\",miner_id=\"$miner_id\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3328,7 +3328,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lotus_wallet_balance {miner_id=\"$miner_id\",address!~\"$worker_addr|$owner_addr|$control0_addr|$miner_id\", name!~\"\"} > 1",
+          "expr": "lotus_wallet_balance {job=\"$job\",miner_id=\"$miner_id\",address!~\"$worker_addr|$owner_addr|$control0_addr|$miner_id\", name!~\"\"} > 1",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3391,7 +3391,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_wallet_verified_datacap{miner_id=\"$miner_id\"} > 0",
+          "expr": "lotus_wallet_verified_datacap{job=\"$job\",miner_id=\"$miner_id\"} > 0",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -3512,7 +3512,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "# REtourne le nombre de JOB dans l'etat running\ncount by (task) (lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"})",
+          "expr": "# REtourne le nombre de JOB dans l'etat running\ncount by (task) (lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3522,7 +3522,7 @@
           "refId": "D"
         },
         {
-          "expr": "count by (state) (lotus_miner_sector_state{miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"} unless on (sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"})",
+          "expr": "count by (state) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"} unless on (sector_id) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"})",
           "format": "time_series",
           "interval": "",
           "legendFormat": "{{ state }}",
@@ -3839,7 +3839,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "count(lotus_miner_pending_publish_deal{miner_id=\"$miner_id\"})",
+          "expr": "count(lotus_miner_pending_publish_deal{job=\"$job\",miner_id=\"$miner_id\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -3979,7 +3979,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "count by (state) (lotus_miner_sector_state{miner_id=\"$miner_id\"})",
+          "expr": "count by (state) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -3990,7 +3990,7 @@
         },
         {
           "exemplar": true,
-          "expr": "count(lotus_miner_sector_state{state=\"Proving\", miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"})",
+          "expr": "count(lotus_miner_sector_state{state=\"Proving\", job=\"$job\",miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"})",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -3999,7 +3999,7 @@
         },
         {
           "exemplar": true,
-          "expr": "count(lotus_miner_sector_state{miner_id=\"$miner_id\", to_upgrade=\"True\" })",
+          "expr": "count(lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", to_upgrade=\"True\" })",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -4388,7 +4388,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "# Retourne tout les secteurs qui sont sur les workers mais dans un statut different de Running. On les enrichis avec les infos des workers (Assigned par exemple)\n(lotus_miner_sector_state{miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"} * on (sector_id) group_left(job_id,run_wait,job_start_time,task,worker) lotus_miner_worker_job{miner_id=\"$miner_id\", run_wait!=\"0\"})*1",
+          "expr": "# Retourne tout les secteurs qui sont sur les workers mais dans un statut different de Running. On les enrichis avec les infos des workers (Assigned par exemple)\n(lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"} * on (sector_id) group_left(job_id,run_wait,job_start_time,task,worker) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\", run_wait!=\"0\"})*1",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -4398,7 +4398,7 @@
           "refId": "A"
         },
         {
-          "expr": "# Retourne les jobs qui sont sur les worker dans un etat different de Running et qui seraient absent de la liste des secteurs (pas sur que ca existe)\n(lotus_miner_worker_job{miner_id=\"$miner_id\", run_wait!=\"0\"} unless on (sector_id) (lotus_miner_sector_state{miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"}))*1",
+          "expr": "# Retourne les jobs qui sont sur les worker dans un etat different de Running et qui seraient absent de la liste des secteurs (pas sur que ca existe)\n(lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\", run_wait!=\"0\"} unless on (sector_id) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"}))*1",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -4407,7 +4407,7 @@
           "refId": "B"
         },
         {
-          "expr": "# Retourne la liste des secteurs qui ne sont pas dans la liste des Jobs (Comme le WAitSeed, WaitCommit, mais aussi d'autres qui traine)\n# Les label_replace servent a creer des colonnes à 0 au cas ou la premiere requete ne retourne rien\n(label_replace(label_replace(label_replace(label_replace(label_replace(lotus_miner_sector_state{miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"},\"job_id\",\"0\",\"\",\"\"),\"run_wait\",\"98\",\"\",\"\"),\"job_start_time\",\"0\",\"\",\"\"),\"task\",\"0\",\"\",\"\"),\"worker\",\"0\",\"\",\"\") unless on (sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\"})*1",
+          "expr": "# Retourne la liste des secteurs qui ne sont pas dans la liste des Jobs (Comme le WAitSeed, WaitCommit, mais aussi d'autres qui traine)\n# Les label_replace servent a creer des colonnes à 0 au cas ou la premiere requete ne retourne rien\n(label_replace(label_replace(label_replace(label_replace(label_replace(lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"},\"job_id\",\"0\",\"\",\"\"),\"run_wait\",\"98\",\"\",\"\"),\"job_start_time\",\"0\",\"\",\"\"),\"task\",\"0\",\"\",\"\"),\"worker\",\"0\",\"\",\"\") unless on (sector_id) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\"})*1",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -4416,7 +4416,7 @@
           "refId": "C"
         },
         {
-          "expr": "# Retourne la date de creation pour les secteurs. Ici on filtre sur les 2 requetes principales precendente and AND et on les unis avec OR. Les requetes precendetes se terminent par *1 pour perdre le nom de la metrics et s'assurer que la transformation Merge fonctionne.\n((lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"creation\"})  and  on (sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\", run_wait!=\"0\"}) or ((lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"creation\"})  and  on (sector_id) (lotus_miner_sector_state{miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"} unless on (sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\"}))",
+          "expr": "# Retourne la date de creation pour les secteurs. Ici on filtre sur les 2 requetes principales precendente and AND et on les unis avec OR. Les requetes precendetes se terminent par *1 pour perdre le nom de la metrics et s'assurer que la transformation Merge fonctionne.\n((lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"creation\"})  and  on (sector_id) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\", run_wait!=\"0\"}) or ((lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"creation\"})  and  on (sector_id) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"} unless on (sector_id) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\"}))",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -4770,7 +4770,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lotus_miner_pending_publish_deal{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_pending_publish_deal{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -5166,7 +5166,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "quantile(0.5, (topk(10,lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{miner_id=\"$miner_id\", state=\"Proving\"})",
+          "expr": "quantile(0.5, (topk(10,lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state=\"Proving\"})",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -5174,7 +5174,7 @@
           "refId": "A"
         },
         {
-          "expr": "quantile(0.5, (topk(100,lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{miner_id=\"$miner_id\", state=\"Proving\"})",
+          "expr": "quantile(0.5, (topk(100,lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state=\"Proving\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -5183,7 +5183,7 @@
           "refId": "B"
         },
         {
-          "expr": "quantile(0.5, (lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"finalized\"} - on (sector_id) lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{miner_id=\"$miner_id\", state=\"Proving\"})",
+          "expr": "quantile(0.5, (lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"finalized\"} - on (sector_id) lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state=\"Proving\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -5336,7 +5336,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "count (lotus_miner_worker_cpu{miner_id=\"$miner_id\"})",
+          "expr": "count (lotus_miner_worker_cpu{job=\"$job\",miner_id=\"$miner_id\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -5645,7 +5645,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "# Retourne la liste de tout les jobs \"Running\" enrichi aves les informations deals and creation date recuperer depuis la liste des sectors\nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} * on (sector_id) group_left(deals,creation_date) (lotus_miner_sector_state{miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
+          "expr": "# Retourne la liste de tout les jobs \"Running\" enrichi aves les informations deals and creation date recuperer depuis la liste des sectors\nlotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"} * on (sector_id) group_left(deals,creation_date) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -5655,7 +5655,7 @@
           "refId": "A"
         },
         {
-          "expr": "# Retourne la liste des jobs en cours \"Running\" pour lesquels il n'a a pas encore des secteurs (Les premiers AP par exemple) \nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} unless on (sector_id) (lotus_miner_sector_state{miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
+          "expr": "# Retourne la liste des jobs en cours \"Running\" pour lesquels il n'a a pas encore des secteurs (Les premiers AP par exemple) \nlotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"} unless on (sector_id) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\",state!~\"(Proving|Removed)\"})*1",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -5663,7 +5663,7 @@
           "refId": "B"
         },
         {
-          "expr": "# Calcul do 95 centile sur 30 jours des jobs par Worker et Par task et calcul le temps restant pour chacun des jobs\nlotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} - on(worker_host,task) group_left()(quantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\",worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task))",
+          "expr": "# Calcul do 95 centile sur 30 jours des jobs par Worker et Par task et calcul le temps restant pour chacun des jobs\nlotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"} - on(worker_host,task) group_left()(quantile(0.95,(max_over_time(lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task))",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -5672,7 +5672,7 @@
           "refId": "C"
         },
         {
-          "expr": "# Retourne la date de creation du secteur\nlotus_miner_sector_event{miner_id=\"$miner_id\",event_type=\"creation\"} and on(sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"} ",
+          "expr": "# Retourne la date de creation du secteur\nlotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\",event_type=\"creation\"} and on(sector_id) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -6048,7 +6048,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_sector_sealing_deals_info{miner_id=\"$miner_id\"}  * on (sector_id) group_left(state) (lotus_miner_sector_state{miner_id=\"$miner_id\"})\n",
+          "expr": "lotus_miner_sector_sealing_deals_info{job=\"$job\",miner_id=\"$miner_id\"}  * on (sector_id) group_left(state) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\"})\n",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -6452,7 +6452,7 @@
       "repeat": null,
       "targets": [
         {
-          "expr": "# Calcul do 95 centile sur 30 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task)",
+          "expr": "# Calcul do 95 centile sur 30 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[30d]) > 1)) by (worker_host,task)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -6461,7 +6461,7 @@
           "refId": "A"
         },
         {
-          "expr": "# Calcul do 95 centile sur 2 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[2d]) > 1)) by (worker_host,task)",
+          "expr": "# Calcul do 95 centile sur 2 jours\nquantile(0.95,(max_over_time(lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\", worker_host!=\"\", run_wait=\"0\"}[2d]) > 1)) by (worker_host,task)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -6743,7 +6743,7 @@
       "repeatDirection": "v",
       "targets": [
         {
-          "expr": "lotus_miner_storage_info{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_storage_info{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -6752,7 +6752,7 @@
           "refId": "B"
         },
         {
-          "expr": "lotus_miner_storage_available{miner_id=\"$miner_id\"} ",
+          "expr": "lotus_miner_storage_available{job=\"$job\",miner_id=\"$miner_id\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -6761,7 +6761,7 @@
           "refId": "D"
         },
         {
-          "expr": "lotus_miner_storage_available{miner_id=\"$miner_id\"} /lotus_miner_storage_capacity{miner_id=\"$miner_id\"} ",
+          "expr": "lotus_miner_storage_available{job=\"$job\",miner_id=\"$miner_id\"} /lotus_miner_storage_capacity{job=\"$job\",miner_id=\"$miner_id\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -6919,14 +6919,14 @@
       "repeatDirection": "h",
       "targets": [
         {
-          "expr": "avg((lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
+          "expr": "avg((lotus_miner_worker_cpu_used{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_cpu{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
           "instant": true,
           "interval": "",
           "legendFormat": "CPU",
           "refId": "D"
         },
         {
-          "expr": "avg((lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
+          "expr": "avg((lotus_miner_worker_gpu_used{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_gpu{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
           "hide": false,
           "instant": true,
           "interval": "",
@@ -6935,7 +6935,7 @@
         },
         {
           "exemplar": true,
-          "expr": "avg((lotus_miner_worker_ram_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_ram_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_ram_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
+          "expr": "avg((lotus_miner_worker_ram_tasks{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_ram_reserved{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_ram_total{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
           "instant": true,
           "interval": "",
           "legendFormat": "RAM",
@@ -6943,7 +6943,7 @@
         },
         {
           "exemplar": true,
-          "expr": "avg((lotus_miner_worker_vmem_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_vmem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_vmem_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
+          "expr": "avg((lotus_miner_worker_vmem_tasks{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_vmem_reserved{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"})/(lotus_miner_worker_vmem_total{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}) >= 0)",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -7018,7 +7018,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_info{miner_id=\"$miner_id\"}",
+          "expr": "lotus_info{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -7088,7 +7088,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_info{miner_id=\"$miner_id\"}",
+          "expr": "lotus_info{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -7165,7 +7165,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_info{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -7345,7 +7345,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_market_info{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_market_info{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -7563,7 +7563,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_market_info{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_market_info{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -7697,7 +7697,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "# REtourne le nombre de JOB dans l'etat running\ncount by (task) (lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"})",
+          "expr": "# REtourne le nombre de JOB dans l'etat running\ncount by (task) (lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -7917,7 +7917,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count by (state) ((lotus_miner_sector_state{miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"}) unless on (sector_id) lotus_miner_worker_job{miner_id=\"$miner_id\",run_wait=\"0\"})",
+          "expr": "count by (state) ((lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state!~\"(Proving|Removed)\"}) unless on (sector_id) lotus_miner_worker_job{job=\"$job\",miner_id=\"$miner_id\",run_wait=\"0\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -8131,7 +8131,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count by (state) (lotus_miner_sector_state{miner_id=\"$miner_id\" })",
+          "expr": "count by (state) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\" })",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -8318,21 +8318,21 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0)",
+              "expr": "count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0)",
               "instant": false,
               "interval": "",
               "legendFormat": "Verified",
               "refId": "B"
             },
             {
-              "expr": "count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0)",
+              "expr": "count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0)",
               "instant": false,
               "interval": "",
               "legendFormat": "Non Verified",
               "refId": "C"
             },
             {
-              "expr": "count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"}) - count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0) - count(lotus_miner_sector_weight{miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} > 0)",
+              "expr": "count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"}) - count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0) - count(lotus_miner_sector_weight{job=\"$job\",miner_id=\"$miner_id\", weight_type=\"non_verified\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} > 0)",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -8452,13 +8452,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$miner_id\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$miner_id\"}",
           "interval": "",
           "legendFormat": "Miner",
           "refId": "A"
         },
         {
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$owner_addr\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$owner_addr\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -8466,7 +8466,7 @@
           "refId": "C"
         },
         {
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$worker_addr\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$worker_addr\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -8474,7 +8474,7 @@
           "refId": "B"
         },
         {
-          "expr": "lotus_wallet_balance{miner_id=\"$miner_id\", address=\"$control0_addr\"}",
+          "expr": "lotus_wallet_balance{job=\"$job\",miner_id=\"$miner_id\", address=\"$control0_addr\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -8574,7 +8574,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_wallet_locked_balance{miner_id=\"$miner_id\"}",
+          "expr": "lotus_wallet_locked_balance{job=\"$job\",miner_id=\"$miner_id\"}",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -8699,7 +8699,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_wallet_balance {miner_id=\"$miner_id\",address!~\"$worker_addr|$owner_addr|$control0_addr|$miner_id\"}",
+          "expr": "lotus_wallet_balance {job=\"$job\",miner_id=\"$miner_id\",address!~\"$worker_addr|$owner_addr|$control0_addr|$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -8803,7 +8803,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_wallet_verified_datacap{miner_id=\"$miner_id\"}",
+          "expr": "lotus_wallet_verified_datacap{job=\"$job\",miner_id=\"$miner_id\"}",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -8929,7 +8929,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(lotus_miner_net_total_in{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_miner_net_total_in{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -8939,7 +8939,7 @@
           "step": 4
         },
         {
-          "expr": "rate(lotus_miner_net_total_out{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_miner_net_total_out{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -9051,7 +9051,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(lotus_miner_net_protocol_in{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_miner_net_protocol_in{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -9061,7 +9061,7 @@
           "step": 4
         },
         {
-          "expr": "rate(lotus_miner_net_protocol_out{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_miner_net_protocol_out{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -9165,7 +9165,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_netpeers_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_netpeers_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -9174,7 +9174,7 @@
           "refId": "A"
         },
         {
-          "expr": "lotus_miner_netpeers_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_netpeers_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "interval": "",
           "legendFormat": "Miner",
           "refId": "B"
@@ -9282,7 +9282,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(lotus_net_total_in{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_net_total_in{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -9292,7 +9292,7 @@
           "step": 4
         },
         {
-          "expr": "rate(lotus_net_total_out{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_net_total_out{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -9403,7 +9403,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(lotus_net_protocol_in{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_net_protocol_in{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -9413,7 +9413,7 @@
           "step": 4
         },
         {
-          "expr": "rate(lotus_net_protocol_out{miner_id=\"$miner_id\"}[5m])",
+          "expr": "rate(lotus_net_protocol_out{job=\"$job\",miner_id=\"$miner_id\"}[5m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -9540,7 +9540,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_cpu_used{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9548,13 +9548,13 @@
               "refId": "D"
             },
             {
-              "expr": "lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_cpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_cpu{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_cpu_used{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "interval": "",
               "legendFormat": "Free",
               "refId": "B"
             },
             {
-              "expr": "lotus_miner_worker_cpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_cpu{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9671,7 +9671,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_gpu_used{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9679,14 +9679,14 @@
               "refId": "D"
             },
             {
-              "expr": "lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_gpu_used{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_gpu{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_gpu_used{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "interval": "",
               "legendFormat": "Free",
               "refId": "B"
             },
             {
-              "expr": "lotus_miner_worker_gpu{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_gpu{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9804,7 +9804,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_ram_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_ram_tasks{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9813,7 +9813,7 @@
             },
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_ram_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_ram_reserved{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "interval": "",
               "legendFormat": "Reserved",
@@ -9821,7 +9821,7 @@
             },
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_ram_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-(lotus_miner_worker_ram_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_ram_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"})",
+              "expr": "lotus_miner_worker_ram_total{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-(lotus_miner_worker_ram_reserved{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}+lotus_miner_worker_ram_tasks{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"})",
               "hide": false,
               "interval": "",
               "legendFormat": "Free",
@@ -9829,7 +9829,7 @@
             },
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_ram_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_ram_total{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9947,7 +9947,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_vmem_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_vmem_tasks{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9956,7 +9956,7 @@
             },
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_vmem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_vmem_reserved{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -9965,7 +9965,7 @@
             },
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_vmem_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_vmem_tasks{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_vmem_reserved{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_vmem_total{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_vmem_tasks{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}-lotus_miner_worker_vmem_reserved{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "interval": "",
               "legendFormat": "Free",
@@ -9973,7 +9973,7 @@
             },
             {
               "exemplar": true,
-              "expr": "lotus_miner_worker_vmem_total{miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
+              "expr": "lotus_miner_worker_vmem_total{job=\"$job\",miner_id=\"$miner_id\", worker_host=\"$worker_host\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -10107,7 +10107,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "lotus_miner_storage_capacity{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_available{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_reserved{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "expr": "lotus_miner_storage_capacity{job=\"$job\",miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_available{job=\"$job\",miner_id=\"$miner_id\", storage_id=\"$storage_id\"}-lotus_miner_storage_reserved{job=\"$job\",miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -10115,7 +10115,7 @@
               "refId": "D"
             },
             {
-              "expr": "lotus_miner_storage_reserved{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "expr": "lotus_miner_storage_reserved{job=\"$job\",miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
               "hide": false,
               "instant": false,
               "interval": "",
@@ -10123,13 +10123,13 @@
               "refId": "A"
             },
             {
-              "expr": "lotus_miner_storage_available{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "expr": "lotus_miner_storage_available{job=\"$job\",miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
               "interval": "",
               "legendFormat": "Free",
               "refId": "B"
             },
             {
-              "expr": "lotus_miner_storage_capacity{miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
+              "expr": "lotus_miner_storage_capacity{job=\"$job\",miner_id=\"$miner_id\", storage_id=\"$storage_id\"}",
               "interval": "",
               "legendFormat": "Total",
               "refId": "C"
@@ -10249,7 +10249,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_mpool_total{miner_id=\"$miner_id\"}",
+          "expr": "lotus_mpool_total{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -10355,7 +10355,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_chain_sync_diff{miner_id=\"$miner_id\"}",
+          "expr": "lotus_chain_sync_diff{job=\"$job\",miner_id=\"$miner_id\"}",
           "instant": false,
           "interval": "",
           "legendFormat": "Worker {{ worker_id }}",
@@ -10460,7 +10460,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_power_mining_eligibility{miner_id=\"$miner_id\"}",
+          "expr": "lotus_power_mining_eligibility{job=\"$job\",miner_id=\"$miner_id\"}",
           "instant": false,
           "interval": "",
           "legendFormat": "Eligibility",
@@ -10698,7 +10698,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_miner_deadline_active_sectors_all{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_sectors_all{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -10706,7 +10706,7 @@
           "refId": "B"
         },
         {
-          "expr": "lotus_miner_deadline_active_sectors_recovering{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_sectors_recovering{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -10714,7 +10714,7 @@
           "refId": "C"
         },
         {
-          "expr": "lotus_miner_deadline_active_sectors_faulty{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_sectors_faulty{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -10839,7 +10839,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count by (state) (lotus_miner_sector_state{miner_id=\"$miner_id\" })",
+          "expr": "count by (state) (lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\" })",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -10849,7 +10849,7 @@
           "refId": "D"
         },
         {
-          "expr": "count(lotus_miner_sector_state{state=\"Proving\", miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"})",
+          "expr": "count(lotus_miner_sector_state{state=\"Proving\", job=\"$job\",miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Expired",
@@ -10998,19 +10998,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_power{miner_id=\"$miner_id\", scope=\"miner\"}",
+          "expr": "lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\"}",
           "interval": "",
           "legendFormat": "{{power_type}}",
           "refId": "A"
         },
         {
-          "expr": "sum( lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"} * on(miner_id) group_left () lotus_miner_info_sector_size{miner_id=\"$miner_id\"})",
+          "expr": "sum( lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"} * on(miner_id) group_left () lotus_miner_info_sector_size{job=\"$job\",miner_id=\"$miner_id\"})",
           "interval": "",
           "legendFormat": "Committed Power",
           "refId": "B"
         },
         {
-          "expr": "sum(lotus_miner_sector_qa_power{miner_id=\"$miner_id\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"})",
+          "expr": "sum(lotus_miner_sector_qa_power{job=\"$job\",miner_id=\"$miner_id\"} * on(sector_id) group_left () lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"})",
           "interval": "",
           "legendFormat": "Max QA Power",
           "refId": "C"
@@ -11140,7 +11140,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "quantile(0.5, (topk(10,lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{miner_id=\"$miner_id\", state=\"Proving\"})",
+          "expr": "quantile(0.5, (topk(10,lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state=\"Proving\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -11148,7 +11148,7 @@
           "refId": "A"
         },
         {
-          "expr": "quantile(0.5, (topk(100,lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{miner_id=\"$miner_id\", state=\"Proving\"})",
+          "expr": "quantile(0.5, (topk(100,lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"finalized\"}) - on (sector_id) lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state=\"Proving\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -11157,7 +11157,7 @@
           "refId": "B"
         },
         {
-          "expr": "quantile(0.5, (lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"finalized\"} - on (sector_id) lotus_miner_sector_event{miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{miner_id=\"$miner_id\", state=\"Proving\"})",
+          "expr": "quantile(0.5, (lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"finalized\"} - on (sector_id) lotus_miner_sector_event{job=\"$job\",miner_id=\"$miner_id\", event_type=\"packed\"}) and on(sector_id) lotus_miner_sector_state{job=\"$job\",miner_id=\"$miner_id\", state=\"Proving\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -11385,7 +11385,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "1/(sum(lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*2*5/60)",
+          "expr": "1/(sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*2*5/60)",
           "format": "time_series",
           "hide": true,
           "instant": false,
@@ -11394,7 +11394,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*5*60*2*24",
+          "expr": "sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})*5*60*2*24",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -11403,7 +11403,7 @@
           "refId": "B"
         },
         {
-          "expr": "sum(lotus_power{miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})",
+          "expr": "sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"miner\", power_type=\"QualityAdjPower\"})/sum(lotus_power{job=\"$job\",miner_id=\"$miner_id\", scope=\"network\",power_type=\"QualityAdjPower\"})",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -11571,7 +11571,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count by (from, method) (lotus_mpool_local_message{miner_id=\"$miner_id\"})",
+          "expr": "count by (from, method) (lotus_mpool_local_message{job=\"$job\",miner_id=\"$miner_id\"})",
           "interval": "",
           "legendFormat": "{{ method }}",
           "refId": "A"
@@ -11672,7 +11672,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "lotus_chain_basefee{miner_id=\"$miner_id\"}",
+          "expr": "lotus_chain_basefee{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -11877,7 +11877,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -12049,7 +12049,7 @@
       "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "lotus_miner_sector_state{state=\"Proving\", miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{miner_id=\"$miner_id\"}",
+          "expr": "lotus_miner_sector_state{state=\"Proving\", job=\"$job\",miner_id=\"$miner_id\"} unless on (sector_id) lotus_miner_deadline_active_partition_sector{job=\"$job\",miner_id=\"$miner_id\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -12191,7 +12191,7 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(lotus_miner_info{miner_id=\"$miner_id\"},worker_addr)",
+        "definition": "label_values(lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"},worker_addr)",
         "description": null,
         "error": null,
         "hide": 2,
@@ -12201,7 +12201,7 @@
         "name": "worker_addr",
         "options": [],
         "query": {
-          "query": "label_values(lotus_miner_info{miner_id=\"$miner_id\"},worker_addr)",
+          "query": "label_values(lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"},worker_addr)",
           "refId": "Prometheus-worker_addr-Variable-Query"
         },
         "refresh": 1,
@@ -12217,7 +12217,7 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(lotus_miner_info{miner_id=\"$miner_id\"},owner_addr)",
+        "definition": "label_values(lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"},owner_addr)",
         "description": null,
         "error": null,
         "hide": 2,
@@ -12227,7 +12227,7 @@
         "name": "owner_addr",
         "options": [],
         "query": {
-          "query": "label_values(lotus_miner_info{miner_id=\"$miner_id\"},owner_addr)",
+          "query": "label_values(lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"},owner_addr)",
           "refId": "Prometheus-owner_addr-Variable-Query"
         },
         "refresh": 1,
@@ -12243,7 +12243,7 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(lotus_miner_info{miner_id=\"$miner_id\"},control0_addr)",
+        "definition": "label_values(lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"},control0_addr)",
         "description": null,
         "error": null,
         "hide": 2,
@@ -12253,7 +12253,7 @@
         "name": "control0_addr",
         "options": [],
         "query": {
-          "query": "label_values(lotus_miner_info{miner_id=\"$miner_id\"},control0_addr)",
+          "query": "label_values(lotus_miner_info{job=\"$job\",miner_id=\"$miner_id\"},control0_addr)",
           "refId": "Prometheus-control0_addr-Variable-Query"
         },
         "refresh": 1,
@@ -12269,7 +12269,7 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "query_result(sort(lotus_miner_worker_cpu{miner_id=\"$miner_id\"}))",
+        "definition": "query_result(sort(lotus_miner_worker_cpu{job=\"$job\",miner_id=\"$miner_id\"}))",
         "description": null,
         "error": null,
         "hide": 0,
@@ -12279,7 +12279,7 @@
         "name": "worker_host",
         "options": [],
         "query": {
-          "query": "query_result(sort(lotus_miner_worker_cpu{miner_id=\"$miner_id\"}))",
+          "query": "query_result(sort(lotus_miner_worker_cpu{job=\"$job\",miner_id=\"$miner_id\"}))",
           "refId": "Prometheus-worker_host-Variable-Query"
         },
         "refresh": 1,
@@ -12295,7 +12295,7 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(lotus_miner_storage_info{miner_id=\"$miner_id\"},storage_id)",
+        "definition": "label_values(lotus_miner_storage_info{job=\"$job\",miner_id=\"$miner_id\"},storage_id)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -12305,7 +12305,7 @@
         "name": "storage_id",
         "options": [],
         "query": {
-          "query": "label_values(lotus_miner_storage_info{miner_id=\"$miner_id\"},storage_id)",
+          "query": "label_values(lotus_miner_storage_info{job=\"$job\",miner_id=\"$miner_id\"},storage_id)",
           "refId": "Prometheus-storage_id-Variable-Query"
         },
         "refresh": 1,
