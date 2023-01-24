@@ -772,6 +772,8 @@ class Markets(Lotus):
     def get_market_data_transfers_enhanced(self):
         """ return on-going data-transfers with status name """
         res = self.get("MarketListDataTransfers", [])["result"]
+        print(res)
+        sys.exit(3)
         for deal_id, transfer in enumerate(res):
             res[deal_id]["Status"] = self.transfer_status_name[transfer["Status"]]
         return res
@@ -1411,25 +1413,25 @@ def collect(daemon, miner, markets, metrics, addresses_config):
                 storage_verified_price=market_info["storage"]["VerifiedPrice"],
                 )
 
-    # GENERATE  DATA TRANSFERS
-    data_transfers = markets.get_market_data_transfers_enhanced()
-    for transfer in data_transfers:
-        try:
-            voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
-        except Exception:
-            voucher = ""
-
-        metrics.add("miner_data_transfers", value=transfer["Transferred"],
-                    miner_id=miner_id,
-                    transfer_id=transfer["TransferID"],
-                    status=transfer["Status"],
-                    base_cid=transfer["BaseCID"]["/"],
-                    is_initiator=transfer["IsInitiator"],
-                    is_sender=transfer["IsSender"],
-                    voucher=voucher,
-                    message=transfer["Message"].replace("\n", "  ").replace('"', " "),
-                    other_peer=transfer["OtherPeer"],
-                    stages=transfer["Stages"])
+    # GENERATE  DATA TRANSFERS XXX DISABLED AS NOT COMPATIBLE WITH BOOST, GENERATE DATA TRANSFER FOR ALL EXEISTING DEALS
+#    data_transfers = markets.get_market_data_transfers_enhanced()
+#    for transfer in data_transfers:
+#        try:
+#            voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
+#        except Exception:
+#            voucher = ""
+#
+#        metrics.add("miner_data_transfers", value=transfer["Transferred"],
+#                    miner_id=miner_id,
+#                    transfer_id=transfer["TransferID"],
+#                    status=transfer["Status"],
+#                    base_cid=transfer["BaseCID"]["/"],
+#                    is_initiator=transfer["IsInitiator"],
+#                    is_sender=transfer["IsSender"],
+#                    voucher=voucher,
+#                    message=transfer["Message"].replace("\n", "  ").replace('"', " "),
+#                    other_peer=transfer["OtherPeer"],
+#                    stages=transfer["Stages"])
 
     # GENERATE PENDINGDEALS
     pending_publish_deals = markets.get_pending_publish_deals()["dealPublish"]
