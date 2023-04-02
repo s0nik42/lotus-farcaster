@@ -798,7 +798,7 @@ class Boost(Markets):
 
     @Error.wrap
     def get_pending_publish_deals(self):
-        query = gql("query { dealPublish { Start Period Deals { PieceSize ClientAddress StartEpoch EndEpoch ProviderCollateral } } }")
+        query = gql("query { dealPublish { Start Period Deals { PieceSize ClientAddress StartEpoch EndEpoch ProviderCollateral ID } } }")
         result = self.get_graphql(query)
         return result
 
@@ -1448,10 +1448,11 @@ def collect(daemon, miner, markets, metrics, addresses_config):
 
         for deal in pending_publish_deals["Deals"]:
             deal_size = int(deal["PieceSize"]["n"])
+            deal_id = deal["ID"]
             client = daemon.address_lookup(deal["ClientAddress"])
             duration = int(deal["EndEpoch"]["n"])-int(deal["StartEpoch"]["n"])
             provider_collateral = int(deal["ProviderCollateral"]["n"])
-            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, client=client, duration=duration, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds)
+            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, client=client, duration=duration, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds, deal_id=deal_id)
 
 #XXXBOOST    pending_publish_deals = markets.get("MarketPendingDeals", [])["result"]
 #    pending_publish_deals= undef
