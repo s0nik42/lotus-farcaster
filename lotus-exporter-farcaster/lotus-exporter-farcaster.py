@@ -883,7 +883,8 @@ class Metrics():
         "scrape_execution_succeed"                  : {"type" : "gauge", "help": "return 1 if lotus-farcaster execution was successfully"},
         "wallet_balance"                            : {"type" : "gauge", "help": "return wallet balance"},
         "wallet_locked_balance"                     : {"type" : "gauge", "help": "return miner wallet locked funds"},
-        "wallet_verified_datacap"                   : {"type" : "gauge", "help": "return miner wallet datacap per address"}
+        "wallet_verified_datacap"                   : {"type" : "gauge", "help": "return miner wallet datacap per address"},
+        "miner_blocks_mined"                        : {"type" : "gauge", "help": "return miner blocks mined"}
     }
 
     __metrics = []
@@ -1103,6 +1104,34 @@ def collect(daemon, miner, markets, metrics, addresses_config):
     # GENERATE NET_PEERS
     daemon_netpeers = daemon.get("NetPeers", [])
     metrics.add("netpeers_total", value=len(daemon_netpeers["result"]), miner_id=miner_id)
+
+    ### BLOCKS BEGIN
+
+    locked_balance_file_path = "/FILECOIN/LOGS/locked_balance_file" # need to change
+
+    miner_blocks_mined = 0
+
+    if os.path.exists(locked_balance_file_path):
+        with open(locked_balance_file_path, "r+") as locked_balance_file:
+            locked_balance_old = locked_balance_file.read()
+            locked_balance_new = locked_funds["result"]["State"]["LockedFunds"]
+            if locked_balance_old != locked_balance_new:
+                locked_balance_file.seek(0)
+                locked_balance_file.write(locked_funds["result"]["State"]["LockedFunds"])
+
+        locked_balance_fil_old = int(locked_balance_old) / 1000000000000000000
+        locked_balance_fil_new = int(locked_balance_new) / 1000000000000000000
+
+        if locked_balance_fil_old < locked_balance_fil_new:
+            miner_blocks_mined = round((locked_balance_fil_new - locked_balance_fil_old) / (23 * 0.75))
+
+    else:
+        with open(locked_balance_file_path, "w") as locked_balance_file:
+            locked_balance_file.write(locked_funds["result"]["State"]["LockedFunds"])
+
+    METRICS_OBJ.add("miner_blocks_mined", value=miner_blocks_mined, miner_id=miner_id)
+
+    ### BLOCKS END
 
     markets_netpeers = markets.get("NetPeers", [])
     metrics.add("miner_netpeers_total", value=len(markets_netpeers["result"]), miner_id=miner_id)
