@@ -140,15 +140,39 @@ class Lotus():
     message_type = {"Account":
                         [
                             "Constructor",
-                            "PubkeyAddress"],
+                            "PubkeyAddress",
+                            "AuthenticateMessage",
+                            "UniversalReceiverHook"],
+
                     "Init":
                         [
                             "Constructor",
-                            "Exec"],
+                            "Exec",
+                            "Exec4"],
+
                     "Cron":
                         [
                             "Constructor",
                             "EpochTick"],
+
+                    "DatacapToken":
+                        [
+                            "Constructor",
+                            "Mint",
+                            "Destroy",
+                            "Name",
+                            "Symbol",
+                            "TotalSupply",
+                            "BalanceOf",
+                            "Transfer",
+                            "TransferFrom",
+                            "IncreaseAllowance",
+                            "DecreaseAllowance",
+                            "RevokeAllowance",
+                            "Burn",
+                            "BurnFrom",
+                            "Allowance"],
+
                     "Reward":
                         [
                             "Constructor",
@@ -165,13 +189,19 @@ class Lotus():
                             "RemoveSigner",
                             "SwapSigner",
                             "ChangeNumApprovalsThreshold",
-                            "LockBalance"],
+                            "LockBalance"
+                            "UniversalReceiverHook",
+                            "ListSignersAndThreshold"],
+
                     "PaymentChannel":
                         [
                             "Constructor",
                             "UpdateChannelState",
                             "Settle",
-                            "Collect"],
+                            "Collect"
+                            "ListFromTo",
+                            "GetRedeemedAmount"],
+
                     "StorageMarket":
                         [
                             "Constructor",
@@ -182,7 +212,18 @@ class Lotus():
                             "ActivateDeals",
                             "OnMinerSectorsTerminate",
                             "ComputeDataCommitment",
-                            "CronTick"],
+                            "CronTick"
+                            "GetBalance",
+                            "GetDealDataCommitment",
+                            "GetDealClient",
+                            "GetDealProvider",
+                            "GetDealLabel",
+                            "GetDealTerm",
+                            "GetDealEpochPrice",
+                            "GetDealClientCollateral",
+                            "GetDealProviderCollateral",
+                            "GetDealVerified",
+                            "GetDealActivation"],
                     "StoragePower":
                         [
                             "Constructor",
@@ -193,7 +234,16 @@ class Lotus():
                             "UpdatePledgeTotal",
                             "Deprecated1",
                             "SubmitPoRepForBulkVerify",
-                            "CurrentTotalPower"],
+                            "CurrentTotalPower",
+                            "NetworkRawPower",
+                            "MinerRawPower",
+                            "Get miner count, consensus count",
+                            "Compute pledge collateral for new sector",
+                            "Get network bytes committed?",
+                            "Get network total pledge collateral?",
+                            "Get network epoch QA power",
+                            "Get network epoch pledge collateral",
+                            "Get miner's QA power"],
                     "StorageMiner":
                         [
                             "Constructor",
@@ -219,7 +269,24 @@ class Lotus():
                             "ConfirmUpdateWorkerKey",
                             "RepayDebt",
                             "ChangeOwnerAddress",
-                            "DisputeWindowedPoSt"],
+                            "DisputeWindowedPoSt",
+                            "PreCommitSectorBatch",
+                            "ProveCommitAggregate",
+                            "ProveReplicaUpdates",
+                            "PreCommitSectorBatch2",
+                            "ProveReplicaUpdates2",
+                            "ChangeBeneficiary",
+                            "GetBeneficiary",
+                            "ExtendSectorExpiration2",
+                            "GetOwner",
+                            "IsControllingAddress",
+                            "GetSectorSize",
+                            "GetVestingFunds",
+                            "GetAvailableBalance",
+                            "Read peer ID, multiaddr",
+                            "Read pre-commit deposit",
+                            "Read initial pledge total",
+                            "Read fee debt"],
 
                     "VerifiedRegistry":
                         [
@@ -227,8 +294,16 @@ class Lotus():
                             "AddVerifier",
                             "RemoveVerifier",
                             "AddVerifiedClient",
-                            "UseBytes",
-                            "RestoreBytes"]
+                            "RemoveVerifiedClientDataCap",
+                            "RemoveExpiredAllocations",
+                            "ClaimAllocations",
+                            "GetClaims",
+                            "ExtendClaimTerms",
+                            "RemoveExpiredClaims",
+                            "UniversalReceiverHook",
+                            "List/get allocations",
+                            "List claims",
+                            "List/check verifiers"]
                     }
 
 
@@ -1003,9 +1078,13 @@ def collect(daemon, miner, markets, metrics, addresses_config):
 
     # GENERATE CHAIN SYNC STATUS
     sync_status = daemon.get("SyncState", [])
+    current_epoch = int((time.time() - 1598306400) / 30)
     for worker in sync_status["result"]["ActiveSyncs"]:
         try:
-            diff_height = worker["Target"]["Height"] - worker["Base"]["Height"]
+            if worker["Height"] > 0:
+                diff_height = current_epoch - worker["Height"]
+            else:
+                diff_height = -1
         except Exception:
             diff_height = -1
         metrics.add("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
