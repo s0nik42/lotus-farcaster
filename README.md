@@ -1,3 +1,10 @@
+WE NEED YOUR SUPPORT. THE ONLY THING YOU HAVE TO DO  IS VOTING FOR US FOR THESE 2 PROJECTS so we can keep continuing developping and supporting our OSS : 
+
+https://www.fil-retropgf.io/projects/0xf1b5dadc1508e7fc85f74b0e5ba5c9a328e18e7ad5f88136c0a6b9c273d0350f
+https://www.fil-retropgf.io/projects/0x7f16baad8422a9c8188c4e2bc7daca6e79bf7ce4989d3271cc87454a0297399f
+
+
+
 # VERSION 3 is out check our [website](http://twinquasar.io/farcaster.html) for upgrade instructions
 
 [<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/screenshots/screenshot001.png">](https://www.youtube.com/playlist?list=PLqtm8BaRkX-YAiJN2BnQfdXwNGt8ao6Op)
