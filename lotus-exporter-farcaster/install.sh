@@ -46,7 +46,13 @@ help_message () {
                   lotus-exporter-farcaster. This option is useful in case 
                   multiple miners run on the same server. 
                   Default : ~LOTUS_PROCESS_USERNAME/.lotus-exporter-farcaster
-                  "
+
+    Debug:
+      if you receive an error like:
+		  ERROR: MinerGetBaseInfo returned no result
+	then wait more than 900 epochs before your Power is >0 on chain
+		  
+		  "
 }
 
 # INTERNAL VARIABLES
