@@ -129,7 +129,7 @@ then
     do
         echo -e "\t $a"
     done
-    echo "TODO : run manually : sudo -u "$IUSER" /usr/local/bin/lotus-exporter-farcaster.py" "$CUSTOM_CONFIG_ARG" "$CUSTOM_CONFIG_PATH"
+    echo "TODO : run manually : sudo -u "$IUSER" /usr/local/bin/lotus-exporter-farcaster.py" "$CUSTOM_CONFIG_ARG" "$CUSTOM_CONFIG_PATH" --debug
     exit 1
 fi
 echo -e "$OK"

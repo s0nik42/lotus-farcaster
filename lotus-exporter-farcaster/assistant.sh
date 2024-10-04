@@ -26,6 +26,9 @@
 miner_api=""
 daemon_api=""
 markets_api=""
+boost_api=""
+boost_graphql=""
+markets_type=""
 
 help_message () {
       echo "Usage : $(basename $0) [ -c folder ]
@@ -35,7 +38,7 @@ help_message () {
     This script scan environment for well knowned variables and paths
     and try to generate lotus-exporter-farcaster config file : config.toml
 
-    IMPORTANT : This script must be ran after lotus-exporter-frcaster
+    IMPORTANT : This script must be ran after lotus-exporter-farcaster
     installation on the same server as the lotus-miner
 
     This script must be run under the same user owning the lotus-miner
@@ -224,25 +227,24 @@ then
             esac
         done
 fi
-
 ################################################################################
-# SEARCH FOR LOTUS MARKETS
+# SEARCH FOR BOOST
 ################################################################################
 
 
-# VERIFY ABOUT MARKETS NODE
+# VERIFY IF BOOST
 while true; do
-    read -n 1 -s -p "   Does the miner has a markets node (if unsure answer no) ? " yn
+    read -n 1 -s -p "   Does the miner has a boost node ? " yn
     case $yn in
-        [Yy]* ) echo -e "Yes$OK" ; break;;
-        [Nn]* ) echo -e "No$SKIP"; markets_api="$miner_api"; break;;
+        [Yy]* ) echo -e "Yes$OK" ; markets_type="boost"; break;;
+        [Nn]* ) echo -e "No$SKIP"; break;;
         * ) read -t 0.01 junk; echo -e "\n   Please answer Y or N." ;;
     esac
 done
 
-if [ -z "$markets_api" ]
+if [ "$markets_type" == "boost" ]
 then
-    echo -e "   Configure Markets API connection string $RUN"
+    echo -e "   Configure BOOST API connection string $RUN"
 
     # IF API VARIABLE SET
     if [ -n "$MARKETS_API_INFO" ]
@@ -250,65 +252,186 @@ then
         while true; do
             read -n 1 -s -p "       Use info found in MARKETS_API_INFO variable [$(display $MARKETS_API_INFO)] ? " yn
             case $yn in
-                [Yy]* ) echo -e "Yes$OK" ; markets_api="$MARKETS_API_INFO"; break;;
+                [Yy]* ) echo -e "Yes$OK" ; boost_api="$MARKETS_API_INFO"; break;;
                 [Nn]* ) echo -e "No$SKIP"; break;;
                 * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
             esac
         done
     fi
-fi
 
-# IF PATH VARIABLE SET AND BOTH TOKEN AND API are available
-if [ -z "$markets_api" -a -n  "$LOTUS_MARKETS_PATH" ]
-then
-    markets_api_token=$(cat "$LOTUS_MARKETS_PATH/token" 2>/dev/null)
-    markets_api_url=$(cat "$LOTUS_MARKETS_PATH/api" 2>/dev/null)
+    # FIND BOOST CONFIG FOLDER
+    if [ -n  "$BOOST_PATH" -a -f "$BOOST_PATH/config.toml" ]
+    then
+        boost_config="$BOOST_PATH/config.toml"
+    elif [ -f "$HOME/.boost/config.toml" ]
+    then
+            boost_config="$HOME/.boost/config.toml"
+    fi
 
-    if [ -n "$markets_api_token" -a -n "$markets_api_url" ]
+    # IF PATH VARIABLE SET AND BOTH TOKEN AND API are available
+    if [ -z "$boost_api" -a -n  "$BOOST_PATH" ]
+    then
+        boost_api_token=$(cat "$BOOST_PATH/token" 2>/dev/null)
+        boost_api_url=$(cat "$BOOST_PATH/api" 2>/dev/null)
+
+        if [ -n "$boost_api_token" -a -n "$boost_api_url" ]
+        then
+            while true; do
+                read -n 1 -s -p "       Use info found in BOOST_PATH variable [$(display $boost_api_token:$boost_api_url)] ? " yn
+                case $yn in
+                    [Yy]* ) echo -e "Yes$OK" ; boost_api="$boost_api_token:$boost_api_url"; boost_config="$BOOST_PATH/config.toml"; break;;
+                    [Nn]* ) echo -e "No$SKIP"; break;;
+                    * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
+                esac
+            done
+        fi
+    fi
+
+    # CHECK CONTENT OF ~/.boost if the value is different from BOOST_PATH variable
+    if [ -z "$boost_api" -a  "$(realpath "$BOOST_PATH" 2>/dev/null)" != "$(realpath "$HOME/.boost" 2>/dev/null)" ]
+    then
+        boost_api_token=$(cat "$HOME/.boost/token" 2>/dev/null)
+        boost_api_url=$(cat "$HOME/.boost/api" 2>/dev/null)
+
+        if [ -n "$boost_api_token" -a -n "$boost_api_url" ]
+        then
+            while true; do
+                read -n 1 -s -p "       Use info found in ~/.boost path [$(display $boost_api_token:$boost_api_url)] ? " yn
+                case $yn in
+                    [Yy]* ) echo -e "Yes$OK" ; boost_api="$boost_api_token:$boost_api_url"; boost_config="/$HOME/.boost/config.toml"; break;;
+                    [Nn]* ) echo -e "No$SKIP"; break;;
+                    * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
+                esac
+            done
+        fi
+
+    fi
+
+    if [ -z "$boost_api" ]
+    then
+            while true; do
+                read -e -p "       No connection string autodetected, set it manually (format : <TOKEN>:ip4/<IP_ADDRESS>/tcp/<PORT>/http) : " boost_api
+                case $boost_api in
+                    "" ) ;;
+                    * ) break;;
+                esac
+            done
+    fi
+
+    # Generate graphql URL
+    GRAPHQL_PORT=$(python -c 'import toml; print (toml.load("'$boost_config'")["Graphql"]["Port"])')
+    if [ -z "$GRAPHQL_PORT" ]
+    then
+        GRAPHQL_PORT="8080"
+    fi
+    GRAPHQL_IP=$(echo $boost_api |cut -f2 -d:|cut -f3 -d/)
+    boost_graphql="http://$GRAPHQL_IP:$GRAPHQL_PORT/graphql/query"
+
+    while true; do
+        read -n 1 -s -p "       Use autogenerated Graphql url [$boost_graphql] ? " yn
+        case $yn in
+            [Yy]* ) echo -e "Yes$OK" ; break;;
+            [Nn]* ) echo -e "No$SKIP"; boost_graphql=""; break;;
+            * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
+        esac
+    done
+
+    if [ -z "$boost_graphql" ]
     then
         while true; do
-            read -n 1 -s -p "       Use info found in LOTUS_MARKETS_PATH variable [$(display $markets_api_token:$markets_api_url)] ? " yn
-            case $yn in
-                [Yy]* ) echo -e "Yes$OK" ; markets_api="$markets_api_token:$markets_api_url"; break;;
-                [Nn]* ) echo -e "No$SKIP"; break;;
-                * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
-            esac
-        done
-    fi
-fi
-
-# CHECK CONTENT OF ~/.lotusmarkets if the value is different from LOTUS_MARKETS_PATH variable
-if [ -z "$markets_api" -a  "$(realpath "$LOTUS_MARKETS_PATH" 2>/dev/null)" != "$(realpath "$HOME/.lotusmarkets" 2>/dev/null)" ]
-then
-    markets_api_token=$(cat "$HOME/.lotusmarkets/token" 2>/dev/null)
-    markets_api_url=$(cat "$HOME/.lotusmarkets/api" 2>/dev/null)
-
-    if [ -n "$markets_api_token" -a -n "$markets_api_url" ]
-    then
-        while true; do
-            read -n 1 -s -p "       Use info found in ~/.lotusmarkets path [$(display $markets_api_token:$markets_api_url)] ? " yn
-            case $yn in
-                [Yy]* ) echo -e "Yes$OK" ; markets_api="$markets_api_token:$markets_api_url"; break;;
-                [Nn]* ) echo -e "No$SKIP"; break;;
-                * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
-            esac
-        done
-    fi
-
-fi
-
-if [ -z "$markets_api" ]
-then
-        while true; do
-            read -e -p "       No connection string autodetected, set it manually (format : <TOKEN>:ip4/<IP_ADDRESS>/tcp/<PORT>/http) : " markets_api
-            case $markets_api in
+            read -e -p "       Enter the boost graphql manually (format : http://<IP_ADDRESS>:<PORT>/graphql/query) : " boost_graphql
+            case $boost_api in
                 "" ) ;;
                 * ) break;;
             esac
         done
+    fi
+
+################################################################################
+# SEARCH FOR LOTUS MARKETS
+################################################################################
+else
+
+
+    # VERIFY ABOUT MARKETS NODE
+    while true; do
+        read -n 1 -s -p "   Does the miner has a markets node (if unsure answer no) ? " yn
+        case $yn in
+            [Yy]* ) echo -e "Yes$OK" ; markets_type="lotus"; break;;
+            [Nn]* ) echo -e "No$SKIP"; markets_api="$miner_api"; break;;
+            * ) read -t 0.01 junk; echo -e "\n   Please answer Y or N." ;;
+        esac
+    done
+
+    if [ -z "$markets_api" ]
+    then
+        echo -e "   Configure Markets API connection string $RUN"
+
+        # IF API VARIABLE SET
+        if [ -n "$MARKETS_API_INFO" ]
+        then
+            while true; do
+                read -n 1 -s -p "       Use info found in MARKETS_API_INFO variable [$(display $MARKETS_API_INFO)] ? " yn
+                case $yn in
+                    [Yy]* ) echo -e "Yes$OK" ; markets_api="$MARKETS_API_INFO"; break;;
+                    [Nn]* ) echo -e "No$SKIP"; break;;
+                    * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
+                esac
+            done
+        fi
+    fi
+
+    # IF PATH VARIABLE SET AND BOTH TOKEN AND API are available
+    if [ -z "$markets_api" -a -n  "$LOTUS_MARKETS_PATH" ]
+    then
+        markets_api_token=$(cat "$LOTUS_MARKETS_PATH/token" 2>/dev/null)
+        markets_api_url=$(cat "$LOTUS_MARKETS_PATH/api" 2>/dev/null)
+
+        if [ -n "$markets_api_token" -a -n "$markets_api_url" ]
+        then
+            while true; do
+                read -n 1 -s -p "       Use info found in LOTUS_MARKETS_PATH variable [$(display $markets_api_token:$markets_api_url)] ? " yn
+                case $yn in
+                    [Yy]* ) echo -e "Yes$OK" ; markets_api="$markets_api_token:$markets_api_url"; break;;
+                    [Nn]* ) echo -e "No$SKIP"; break;;
+                    * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
+                esac
+            done
+        fi
+    fi
+
+    # CHECK CONTENT OF ~/.lotusmarkets if the value is different from LOTUS_MARKETS_PATH variable
+    if [ -z "$markets_api" -a  "$(realpath "$LOTUS_MARKETS_PATH" 2>/dev/null)" != "$(realpath "$HOME/.lotusmarkets" 2>/dev/null)" ]
+    then
+        markets_api_token=$(cat "$HOME/.lotusmarkets/token" 2>/dev/null)
+        markets_api_url=$(cat "$HOME/.lotusmarkets/api" 2>/dev/null)
+
+        if [ -n "$markets_api_token" -a -n "$markets_api_url" ]
+        then
+            while true; do
+                read -n 1 -s -p "       Use info found in ~/.lotusmarkets path [$(display $markets_api_token:$markets_api_url)] ? " yn
+                case $yn in
+                    [Yy]* ) echo -e "Yes$OK" ; markets_api="$markets_api_token:$markets_api_url"; break;;
+                    [Nn]* ) echo -e "No$SKIP"; break;;
+                    * ) read -t 0.01 junk; echo -e "\n       Please answer Y or N." ;;
+                esac
+            done
+        fi
+
+    fi
+
+    if [ -z "$markets_api" ]
+    then
+            while true; do
+                read -e -p "       No connection string autodetected, set it manually (format : <TOKEN>:ip4/<IP_ADDRESS>/tcp/<PORT>/http) : " markets_api
+                case $markets_api in
+                    "" ) ;;
+                    * ) break;;
+                esac
+            done
+    fi
 fi
 
-
 # SAVE FILE
-sed "s|<MINER_API_STRING>|$miner_api| ; s|<MARKETS_API_STRING>|$markets_api| ;s|<DAEMON_API_STRING>|$daemon_api|" > "$TARGET_CONFIG_PATH/config.toml" < "$EXEC_PATH/config.toml.example"
+sed "s|<MINER_API_STRING>|$miner_api| ; s|<MARKETS_API_STRING>|$markets_api| ;s|<DAEMON_API_STRING>|$daemon_api| ;s|<BOOST_API_STRING>|$boost_api| ;s|<MARKETS_TYPE_STRING>|$markets_type| ; s|<BOOST_GRAPHQL_URL_STRING>|$boost_graphql|" > "$TARGET_CONFIG_PATH/config.toml" < "$EXEC_PATH/config.toml.example"
 exit

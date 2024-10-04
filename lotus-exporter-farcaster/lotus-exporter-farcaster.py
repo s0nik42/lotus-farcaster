@@ -26,6 +26,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+# Release v4.0.0
+# Boost Support
+# Introducing graphql
+
+# Release v3.0.2
+#   - Add --debug
 
 # Release v3
 #   - NEW Expired sectors (dashboard + exporter)
@@ -67,11 +73,16 @@ import asyncio
 import argparse
 import logging
 from functools import wraps
+import datetime
 import toml
 import multibase
 import aiohttp
+import traceback
+from gql import gql, Client
+from gql.transport.aiohttp import AIOHTTPTransport
+from gql.transport.aiohttp import log as aiohttp_logger
 
-VERSION = "v3.0.1"
+VERSION = "v3.0.2"
 
 #################################################################################
 # CLASS DEFINITION
@@ -103,37 +114,65 @@ class MarketsError(Error):
 class DaemonError(Error):
     """Customer Exception to identify error coming from the daemon. Used  for the dashboard Status panel"""
 
+class BoostError(Error):
+    """Customer Exception to identify error coming from boost. Used  for the dashboard Status panel"""
+
+
 class Lotus():
     """Lotus class is a common parent class to Miner and Daemon Class"""
     target = "lotus"
     Error = Error
 
     actor_type = {
-        b"system":           "System",
-        b"init":             "Init",
-        b"reward":           "Reward",
-        b"cron":             "Cron",
-        b"storagepower":     "StoragePower",
-        b"storagemarket":    "StorageMarket",
-        b"verifiedregistry": "VerifiedRegistry",
-        b"account":          "Account",
-        b"multisig":         "Multisig",
-        b"paymentchannel":   "PaymentChannel",
-        b"storageminer":     "StorageMiner"
+        "system":           "System",
+        "init":             "Init",
+        "reward":           "Reward",
+        "cron":             "Cron",
+        "storagepower":     "StoragePower",
+        "storagemarket":    "StorageMarket",
+        "verifiedregistry": "VerifiedRegistry",
+        "account":          "Account",
+        "multisig":         "Multisig",
+        "paymentchannel":   "PaymentChannel",
+        "storageminer":     "StorageMiner"
     }
 
     message_type = {"Account":
                         [
                             "Constructor",
-                            "PubkeyAddress"],
+                            "PubkeyAddress",
+                            "AuthenticateMessage",
+                            "UniversalReceiverHook"],
+
                     "Init":
                         [
                             "Constructor",
-                            "Exec"],
+                            "Exec",
+                            "Exec4"],
+
                     "Cron":
                         [
                             "Constructor",
                             "EpochTick"],
+
+                    "DatacapToken":
+                        [
+                            "Constructor",
+                            "Mint",
+                            "Destroy",
+                            "Name",
+                            "Symbol",
+                            "TotalSupply",
+                            "BalanceOf",
+                            "Transfer",
+                            "TransferFrom",
+                            "IncreaseAllowance",
+                            "DecreaseAllowance",
+                            "RevokeAllowance",
+                            "Burn",
+                            "BurnFrom",
+                            "Allowance"],
+
                     "Reward":
                         [
                             "Constructor",
@@ -150,13 +189,19 @@ class Lotus():
                             "RemoveSigner",
                             "SwapSigner",
                             "ChangeNumApprovalsThreshold",
-                            "LockBalance"],
+                            "LockBalance"
+                            "UniversalReceiverHook",
+                            "ListSignersAndThreshold"],
+
                     "PaymentChannel":
                         [
                             "Constructor",
                             "UpdateChannelState",
                             "Settle",
-                            "Collect"],
+                            "Collect"
+                            "ListFromTo",
+                            "GetRedeemedAmount"],
+
                     "StorageMarket":
                         [
                             "Constructor",
@@ -167,7 +212,18 @@ class Lotus():
                             "ActivateDeals",
                             "OnMinerSectorsTerminate",
                             "ComputeDataCommitment",
-                            "CronTick"],
+                            "CronTick"
+                            "GetBalance",
+                            "GetDealDataCommitment",
+                            "GetDealClient",
+                            "GetDealProvider",
+                            "GetDealLabel",
+                            "GetDealTerm",
+                            "GetDealEpochPrice",
+                            "GetDealClientCollateral",
+                            "GetDealProviderCollateral",
+                            "GetDealVerified",
+                            "GetDealActivation"],
                     "StoragePower":
                         [
                             "Constructor",
@@ -178,7 +234,16 @@ class Lotus():
                             "UpdatePledgeTotal",
                             "Deprecated1",
                             "SubmitPoRepForBulkVerify",
-                            "CurrentTotalPower"],
+                            "CurrentTotalPower",
+                            "NetworkRawPower",
+                            "MinerRawPower",
+                            "Get miner count, consensus count",
+                            "Compute pledge collateral for new sector",
+                            "Get network bytes committed?",
+                            "Get network total pledge collateral?",
+                            "Get network epoch QA power",
+                            "Get network epoch pledge collateral",
+                            "Get miner's QA power"],
                     "StorageMiner":
                         [
                             "Constructor",
@@ -204,7 +269,24 @@ class Lotus():
                             "ConfirmUpdateWorkerKey",
                             "RepayDebt",
                             "ChangeOwnerAddress",
-                            "DisputeWindowedPoSt"],
+                            "DisputeWindowedPoSt",
+                            "PreCommitSectorBatch",
+                            "ProveCommitAggregate",
+                            "ProveReplicaUpdates",
+                            "PreCommitSectorBatch2",
+                            "ProveReplicaUpdates2",
+                            "ChangeBeneficiary",
+                            "GetBeneficiary",
+                            "ExtendSectorExpiration2",
+                            "GetOwner",
+                            "IsControllingAddress",
+                            "GetSectorSize",
+                            "GetVestingFunds",
+                            "GetAvailableBalance",
+                            "Read peer ID, multiaddr",
+                            "Read pre-commit deposit",
+                            "Read initial pledge total",
+                            "Read fee debt"],
 
                     "VerifiedRegistry":
                         [
@@ -212,8 +294,16 @@ class Lotus():
                             "AddVerifier",
                             "RemoveVerifier",
                             "AddVerifiedClient",
-                            "UseBytes",
-                            "RestoreBytes"]
+                            "RemoveVerifiedClientDataCap",
+                            "RemoveExpiredAllocations",
+                            "ClaimAllocations",
+                            "GetClaims",
+                            "ExtendClaimTerms",
+                            "RemoveExpiredClaims",
+                            "UniversalReceiverHook",
+                            "List/get allocations",
+                            "List claims",
+                            "List/check verifiers"]
                     }
 
 
@@ -347,18 +437,6 @@ class Lotus():
         quality = (scaled_up_weighted_sum_space_time / (sector_space_time * quality_base_multiplier))
         return int(size * quality) >> sector_quality_precision
 
-    @classmethod
-    def _get_actor_type(cls, actor_code):
-        try:
-            a_type = multibase.decode(actor_code)[10:]
-        except Exception:
-            raise Exception(f'Cannot decode actor_code {actor_code}')
-
-        if a_type in cls.actor_type.keys():
-            return cls.actor_type[a_type]
-
-        raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
-
 class Daemon(Lotus):
     """Lotus Daemon class """
     target = "daemon"
@@ -366,6 +444,15 @@ class Daemon(Lotus):
     __chain_head = None
     __known_addresses = {}
     __local_wallet_list = None
+    actor_cid = {}
+
+    @Error.wrap
+    def __init__(self, url, token):
+        self.url = url
+        self.token = token
+        self.network_version = self.get("StateNetworkVersion", [self.tipset_key()])["result"]
+        for actor, cid in self.get("StateActorCodeCIDs", [self.network_version])["result"].items():
+            self.actor_cid[cid["/"]] = actor
 
     @Error.wrap
     def chain_head(self):
@@ -390,7 +477,19 @@ class Daemon(Lotus):
         return self.__known_addresses.update(*args, **kwargs)
 
     @Error.wrap
-    def __address_lookup(self, input_addr):
+    def _get_actor_type(self, actor_code):
+        try:
+            a_type = self.actor_cid[actor_code]
+        except Exception:
+            raise Exception(f'Cannot decode actor_code {actor_code}')
+
+        if a_type in self.__class__.actor_type.keys():
+            return self.__class__.actor_type[a_type]
+
+        raise Exception(f'Unknown actor_type {a_type} derived from actor_code : {actor_code}')
+
+    @Error.wrap
+    def address_lookup(self, input_addr):
         """ The function lookup an address and return the corresponding name from the chain or from the know_addresses table"""
 
         # if its in the lookup table, return it straight Away
@@ -568,8 +667,8 @@ class Daemon(Lotus):
             }
         else:
             deal = deal_info["Proposal"]
-            deal["Client"] = self.__address_lookup(deal["Client"])
-            deal["Provider"] = self.__address_lookup(deal["Provider"])
+            deal["Client"] = self.address_lookup(deal["Client"])
+            deal["Provider"] = self.address_lookup(deal["Provider"])
         return deal
 
     @Error.wrap
@@ -590,10 +689,10 @@ class Daemon(Lotus):
                 msg["Message"]["actor_type"], msg["Message"]["method_type"] = self.__get_message_type(msg["Message"]["To"], msg["Message"]["Method"])
 
                 # Prettry print To address
-                msg["Message"]["display_to"] = self.__address_lookup(msg["Message"]["To"])
+                msg["Message"]["display_to"] = self.address_lookup(msg["Message"]["To"])
 
                 # Prettyprint From addresses
-                msg["Message"]["display_from"] = self.__address_lookup(msg["Message"]["From"])
+                msg["Message"]["display_from"] = self.address_lookup(msg["Message"]["From"])
 
                 msg_list.append(msg["Message"])
 
@@ -627,7 +726,7 @@ class Daemon(Lotus):
             # Add address to the list
             res[addr] = {}
             res[addr]["balance"] = balance
-            res[addr]["name"] = self.__address_lookup(addr)
+            res[addr]["name"] = self.address_lookup(addr)
 
             try:
                 verified_result = self.get("StateVerifiedClientStatus", [addr, self.tipset_key()])
@@ -748,9 +847,46 @@ class Markets(Lotus):
     def get_market_data_transfers_enhanced(self):
         """ return on-going data-transfers with status name """
         res = self.get("MarketListDataTransfers", [])["result"]
+        print(res)
+        sys.exit(3)
         for deal_id, transfer in enumerate(res):
             res[deal_id]["Status"] = self.transfer_status_name[transfer["Status"]]
         return res
+
+    @Error.wrap
+    def get_pending_publish_deals(self):
+        pass
+
+class Boost(Markets):
+    """ Boost class"""
+    target = "boost"
+    Error = BoostError
+
+
+    def __init__(self, url, token, graphql_url):
+        self.url = url
+        self.token = token
+        self.graphql_url = graphql_url
+
+        #Disable graphql log , to verbose by default
+        aiohttp_logger.setLevel(logging.WARNING)
+
+    @Error.wrap
+    def get_pending_publish_deals(self):
+        query = gql("query { dealPublish { Start Period Deals { PieceSize ClientAddress StartEpoch EndEpoch ProviderCollateral ID } } }")
+        result = self.get_graphql(query)
+        return result
+
+    @Error.wrap
+    def get_graphql(self, query):
+        """Send a graphql query to boost, this function is not async yet"""
+
+        transport = AIOHTTPTransport(url=self.graphql_url)
+        client = Client(transport=transport, fetch_schema_from_transport=False)
+
+        result = client.execute(query)
+
+        return result
 
 
 class Metrics():
@@ -786,6 +922,7 @@ class Metrics():
         "miner_net_protocol_out"                    : {"type" : "counter", "help": "return output per protocol net"},
         "miner_net_total_in"                        : {"type" : "counter", "help": "return input net"},
         "miner_net_total_out"                       : {"type" : "counter", "help": "return output net"},
+        "miner_pending_publish_deal"                : {"type" : "gauge", "help": "pending deal detail"},
         "miner_sector_event"                        : {"type" : "gauge", "help": "contains important event of the sector life"},
         "miner_sector_sealing_deals_info"           : {"type" : "gauge", "help": "contains information related to deals that are not in Proving and Removed state."},
         "miner_sector_state"                        : {"type" : "gauge", "help": "contains current state, nb of deals, is pledged in labels"},
@@ -801,11 +938,12 @@ class Metrics():
         "miner_worker_gpu_used"                     : {"type" : "gauge", "help": "is the GPU used by lotus"},
         "miner_worker_id"                           : {"type" : "gauge", "help": "All lotus worker information prfer to use workername than workerid which is changing at each restart"},
         "miner_worker_job"                          : {"type" : "gauge", "help": "status of each individual job running on the workers. Value is the duration"},
-        "miner_worker_mem_physical"                 : {"type" : "gauge", "help": "worker server RAM"},
-        "miner_worker_mem_physical_used"            : {"type" : "gauge", "help": "worker minimal memory used"},
-        "miner_worker_mem_reserved"                 : {"type" : "gauge", "help": "worker memory reserved by lotus"},
-        "miner_worker_mem_swap"                     : {"type" : "gauge", "help": "server SWAP"},
-        "miner_worker_mem_vmem_used"                : {"type" : "gauge", "help": "worker maximum memory used"},
+        "miner_worker_ram_total"                    : {"type" : "gauge", "help": "worker server RAM"},
+        "miner_worker_ram_tasks"                    : {"type" : "gauge", "help": "worker minimal memory used"},
+        "miner_worker_ram_reserved"                 : {"type" : "gauge", "help": "worker memory reserved by lotus"},
+        "miner_worker_vmem_total"                   : {"type" : "gauge", "help": "server Physical RAM + Swap"},
+        "miner_worker_vmem_tasks"                   : {"type" : "gauge", "help": "worker VMEM used by on-going tasks"},
+        "miner_worker_vmem_reserved"                : {"type" : "gauge", "help": "worker VMEM reserved by lotus"},
         "mpool_local_message"                       : {"type" : "gauge", "help": "local message details"},
         "mpool_local_total"                         : {"type" : "gauge", "help": "return number of messages pending in local mpool"},
         "mpool_total"                               : {"type" : "gauge", "help": "return number of message pending in mpool"},
@@ -841,7 +979,9 @@ class Metrics():
         if exc_type is None:
             success = 1
         else:
-            if exc_type == MarketsError:
+            if exc_type == BoostError:
+                success = -4
+            elif exc_type == MarketsError:
                 success = -3
             elif exc_type == MinerError:
                 success = -2
@@ -938,9 +1078,13 @@ def collect(daemon, miner, markets, metrics, addresses_config):
 
     # GENERATE CHAIN SYNC STATUS
     sync_status = daemon.get("SyncState", [])
+    current_epoch = int((time.time() - 1598306400) / 30)
     for worker in sync_status["result"]["ActiveSyncs"]:
         try:
-            diff_height = worker["Target"]["Height"] - worker["Base"]["Height"]
+            if worker["Height"] > 0:
+                diff_height = current_epoch - worker["Height"]
+            else:
+                diff_height = -1
         except Exception:
             diff_height = -1
         metrics.add("chain_sync_diff", value=diff_height, miner_id=miner_id, worker_id=sync_status["result"]["ActiveSyncs"].index(worker))
@@ -1068,23 +1212,110 @@ def collect(daemon, miner, markets, metrics, addresses_config):
     # XXX 1.2.1 introduce a new worker_id format. Later we should delete it, its a useless info.
     #print("# HELP lotus_miner_worker_id All lotus worker information prfer to use workername than workerid which is changing at each restart")
     #print("# TYPE lotus_miner_worker_id gauge")
+
+#
+# 37
+                 # TOTAL RAM
+# 36             ramTotal := stat.Info.Resources.MemPhysical
+
+                 # RAM USED
+# 35             ramTasks := stat.MemUsedMin
+
+                # RAM RESERVED
+# 34             ramUsed := stat.Info.Resources.MemUsed
+# 33             var ramReserved uint64 = 0
+# 32             if ramUsed > ramTasks {
+# 31                 ramReserved = ramUsed - ramTasks
+# 30             }
+# 29             ramBar := barString(float64(ramTotal), float64(ramReserved), float64(ramTasks))
+# 28
+# 27             fmt.Printf("\tRAM:  [%s] %d%% %s/%s\n", ramBar,
+# 26                 (ramTasks+ramReserved)*100/stat.Info.Resources.MemPhysical,
+# 25                 types.SizeStr(types.NewInt(ramTasks+ramUsed)),
+# 24                 types.SizeStr(types.NewInt(stat.Info.Resources.MemPhysical)))
+# 23
+# 22             vmemTotal := stat.Info.Resources.MemPhysical + stat.Info.Resources.MemSwap
+# 21             vmemTasks := stat.MemUsedMax
+# 20             vmemUsed := stat.Info.Resources.MemUsed + stat.Info.Resources.MemSwapUsed
+# 19             var vmemReserved uint64 = 0
+# 18             if vmemUsed > vmemTasks {
+# 17                 vmemReserved = vmemUsed - vmemTasks
+# 16             }
+# 15             vmemBar := barString(float64(vmemTotal), float64(vmemReserved), float64(vmemTasks))
+# 14
+# 13             fmt.Printf("\tVMEM: [%s] %d%% %s/%s\n", vmemBar,
+# 12                 (vmemTasks+vmemReserved)*100/vmemTotal,
+# 11                 types.SizeStr(types.NewInt(vmemTasks+vmemReserved)),
+# 10                 types.SizeStr(types.NewInt(vmemTotal)))
+#  9
+#
+
     worker_list = {}
-    for val in workerstats["result"].items():
-        val = val[1]
-        info = val["Info"]
-        worker_host = info["Hostname"]
-        mem_physical = info["Resources"]["MemPhysical"]
-        mem_swap = info["Resources"]["MemSwap"]
-        mem_reserved = info["Resources"]["MemReserved"]
-        cpus = info["Resources"]["CPUs"]
-        gpus = len(info["Resources"]["GPUs"])
-        mem_used_min = val["MemUsedMin"]
-        mem_used_max = val["MemUsedMax"]
-        if val["GpuUsed"]:
+    for (worker_id, stat) in workerstats["result"].items():
+        worker_host = stat["Info"]["Hostname"]
+        cpus = stat["Info"]["Resources"]["CPUs"]
+        gpus = len(stat["Info"]["Resources"]["GPUs"])
+
+        # SMALL HACK FOR RETROCOMPATIBILITY CAN BE REMOVED IN NEW LOTUS VERSION WE NEED TO CALCULATE MEMRESERVED
+        if "MemReserved" not in stat["Info"]["Resources"].keys():
+            # TOTAL RAM AVAILABLE
+            ram_total = stat["Info"]["Resources"]["MemPhysical"]
+
+            # TOTAL RAM USED BY ONGOING TASKS
+            ram_tasks = stat["MemUsedMin"]
+
+            # TOTAL RAM USED (really used + RESERVED
+            ram_used = stat["Info"]["Resources"]["MemUsed"]
+
+            # TOTAL RAM RESERVED
+            ram_reserved = 0
+            if ram_used > ram_tasks:
+                ram_reserved = ram_used - ram_tasks
+
+            # TOTAL VMEM
+            vmem_total = ram_total + stat["Info"]["Resources"]["MemSwap"]
+
+            # TOTAL VMEM USED BY ONGOING TASKS
+            vmem_tasks = stat["MemUsedMax"]
+
+            # TOTAL VMEM RESERVER + REALLY USED
+            vmem_used = ram_used + stat["Info"]["Resources"]["MemSwapUsed"]
+
+            # TOTAL VMEM RESERVED
+            vmem_reserved = 0
+            if vmem_used > vmem_tasks:
+                vmem_reserved = vmem_used - vmem_tasks
+
+        else:
+            # TOTAL RAM AVAILABLE
+            ram_total = stat["Info"]["Resources"]["MemPhysical"]
+
+            # TOTAL RAM USED BY ONGOING TASKS
+            ram_tasks = stat["MemUsedMin"]
+
+            # TOTAL RAM RESERVED
+            ram_reserved = stat["Info"]["Resources"]["MemReserved"]
+
+            # TOTAL RAM USED (really used + RESERVED
+            ram_used = ram_tasks + ram_reserved
+
+            # TOTAL VMEM
+            vmem_total = ram_total + stat["Info"]["Resources"]["MemSwap"]
+
+            # TOTAL VMEM USED BY ONGOING TASKS
+            vmem_tasks = stat["MemUsedMax"]
+
+            # TOTAL VMEM USED REALLY USED + RESERVED // HERE THERE IS NO SWAP RESERVED
+            vmem_used = vmem_tasks + ram_reserved
+
+            # TOTAL MEM RESERVER, HERE ONLY RAM
+            vmem_reserved = ram_reserved
+
+        if stat["GpuUsed"]:
             gpu_used = 1
         else:
             gpu_used = 0
-        cpu_used = val["CpuUse"]
+        cpu_used = stat["CpuUse"]
 
         # TEST to avoid duplicate entries incase 2 workers on the same machine. This could be remove once PL will include URL in WorkerStats API call
         if worker_host not in worker_list.keys():
@@ -1092,11 +1323,12 @@ def collect(daemon, miner, markets, metrics, addresses_config):
 
             metrics.add("miner_worker_cpu", value=cpus, miner_id=miner_id, worker_host=worker_host)
             metrics.add("miner_worker_gpu", value=gpus, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_physical", value=mem_physical, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_swap", value=mem_swap, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_physical_used", value=mem_used_min, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_vmem_used", value=mem_used_max, miner_id=miner_id, worker_host=worker_host)
-            metrics.add("miner_worker_mem_reserved", value=mem_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_ram_total", value=ram_total, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_ram_reserved", value=ram_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_ram_tasks", value=ram_tasks, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_vmem_total", value=vmem_total, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_vmem_reserved", value=vmem_reserved, miner_id=miner_id, worker_host=worker_host)
+            metrics.add("miner_worker_vmem_tasks", value=vmem_tasks, miner_id=miner_id, worker_host=worker_host)
             metrics.add("miner_worker_gpu_used", value=gpu_used, miner_id=miner_id, worker_host=worker_host)
             metrics.add("miner_worker_cpu_used", value=cpu_used, miner_id=miner_id, worker_host=worker_host)
     metrics.checkpoint("Workers")
@@ -1161,7 +1393,12 @@ def collect(daemon, miner, markets, metrics, addresses_config):
             deal_weight = int(detail["result"]["DealWeight"])
             qa_power = daemon.qa_power_for_weight(size, duration, deal_weight, verified_weight)
 
-        creation_date = ""
+        try:
+            creation_date = detail["result"]["Log"][0]["Timestamp"]
+        except Exception as exp:
+            logging.warning(f"Sector {i} : cannot find sector creation date : {exp}")
+            creation_date = 0
+            pass
         packed_date = ""
         finalized_date = ""
 
@@ -1173,10 +1410,16 @@ def collect(daemon, miner, markets, metrics, addresses_config):
                 packed_date = detail["result"]["Log"][log]["Timestamp"]
             if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorFinalized":
                 finalized_date = detail["result"]["Log"][log]["Timestamp"]
-        if detail["result"]["Log"] and detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
+
+        try:
+            if detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
+                pledged = 1
+            else:
+                pledged = 0
+        except Exception as exp:
+            logging.warning(f"Sector {i} : cannot find sector kind, default to CC : {exp}")
             pledged = 1
-        else:
-            pledged = 0
+            pass
         metrics.add("miner_sector_state", value=1, miner_id=miner_id, sector_id=sector, state=detail["result"]["State"], to_upgrade=detail["result"]["ToUpgrade"], pledged=pledged, deals=deals)
         metrics.add("miner_sector_weight", value=verified_weight, weight_type="verified", miner_id=miner_id, sector_id=sector)
         metrics.add("miner_sector_weight", value=deal_weight, weight_type="non_verified", miner_id=miner_id, sector_id=sector)
@@ -1253,27 +1496,74 @@ def collect(daemon, miner, markets, metrics, addresses_config):
                 storage_verified_price=market_info["storage"]["VerifiedPrice"],
                 )
 
-    # GENERATE  DATA TRANSFERS
-    data_transfers = markets.get_market_data_transfers_enhanced()
-    for transfer in data_transfers:
-        try:
-            voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
-        except Exception:
-            voucher = ""
+    # GENERATE  DATA TRANSFERS XXX DISABLED AS NOT COMPATIBLE WITH BOOST, GENERATE DATA TRANSFER FOR ALL EXEISTING DEALS
+#    data_transfers = markets.get_market_data_transfers_enhanced()
+#    for transfer in data_transfers:
+#        try:
+#            voucher = json.loads(transfer["Voucher"])["Proposal"]["/"]
+#        except Exception:
+#            voucher = ""
+#
+#        metrics.add("miner_data_transfers", value=transfer["Transferred"],
+#                    miner_id=miner_id,
+#                    transfer_id=transfer["TransferID"],
+#                    status=transfer["Status"],
+#                    base_cid=transfer["BaseCID"]["/"],
+#                    is_initiator=transfer["IsInitiator"],
+#                    is_sender=transfer["IsSender"],
+#                    voucher=voucher,
+#                    message=transfer["Message"].replace("\n", "  ").replace('"', " "),
+#                    other_peer=transfer["OtherPeer"],
+#                    stages=transfer["Stages"])
 
-        metrics.add("miner_data_transfers", value=transfer["Transferred"],
-                    miner_id=miner_id,
-                    transfer_id=transfer["TransferID"],
-                    status=transfer["Status"],
-                    base_cid=transfer["BaseCID"]["/"],
-                    is_initiator=transfer["IsInitiator"],
-                    is_sender=transfer["IsSender"],
-                    voucher=voucher,
-                    message=transfer["Message"].replace("\n", "  "),
-                    other_peer=transfer["OtherPeer"],
-                    stages=transfer["Stages"])
+    # GENERATE PENDINGDEALS
+    pending_publish_deals = markets.get_pending_publish_deals()["dealPublish"]
+
+    if pending_publish_deals and len(pending_publish_deals["Deals"]) > 0:
+        # Remove microseconds because not managed by python then convert to epoch
+        publish_start = pending_publish_deals["Start"]
+        plus_position = publish_start.find("+")
+        publish_start = publish_start[:plus_position-3] + publish_start[plus_position:]
+        publish_start = datetime.datetime.strptime(publish_start, '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%s')
+
+        # Clean PublishINseconds
+        publish_in_seconds = pending_publish_deals["Period"] / 1000000000
+
+        for deal in pending_publish_deals["Deals"]:
+            deal_size = int(deal["PieceSize"]["n"])
+            deal_id = deal["ID"]
+            client = daemon.address_lookup(deal["ClientAddress"])
+            duration = int(deal["EndEpoch"]["n"])-int(deal["StartEpoch"]["n"])
+            provider_collateral = int(deal["ProviderCollateral"]["n"])
+            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, client=client, duration=duration, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds, deal_id=deal_id)
+
+#XXXBOOST    pending_publish_deals = markets.get("MarketPendingDeals", [])["result"]
+#    pending_publish_deals= undef
+#
+#    if pending_publish_deals and len(pending_publish_deals["Deals"]) > 0:
+#        # Remove microseconds because not managed by python then convert to epoch
+#        publish_start = pending_publish_deals["PublishPeriodStart"]
+#        plus_position = publish_start.find("+")
+#        publish_start = publish_start[:plus_position-3] + publish_start[plus_position:]
+#        publish_start = datetime.datetime.strptime(publish_start, '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%s')
+#
+#        # Clean PublishINseconds
+#        publish_in_seconds = pending_publish_deals["PublishPeriod"] / 1000000000
+#
+#        for deal in pending_publish_deals["Deals"]:
+#            deal_size = deal["Proposal"]["PieceSize"]
+#            deal_is_verified = deal["Proposal"]["VerifiedDeal"]
+#            client = daemon.address_lookup(deal["Proposal"]["Client"])
+#            duration = deal["Proposal"]["EndEpoch"]-deal["Proposal"]["StartEpoch"]
+#            price_per_epoch = deal["Proposal"]["StoragePricePerEpoch"]
+#            total_price = int(duration) * int(price_per_epoch)
+#            provider_collateral = deal["Proposal"]["ProviderCollateral"]
+#            metrics.add("miner_pending_publish_deal", value=1, miner_id=miner_id, deal_size=deal_size, deal_is_verified=deal_is_verified, client=client, duration=duration, price_per_epoch=price_per_epoch, total_price=total_price, provider_collateral=provider_collateral, publish_start=publish_start, publish_in_seconds=publish_in_seconds)
+#
+#
+
     metrics.checkpoint("Market")
-
+    # XXX RAJOUTER : PublishPeriodStart / PublishINseconds / Expected collateral Against ProviderCollateral
 
     # GENERATE DEALS INFOS
     # XXX NOT FINISHED
@@ -1336,7 +1626,7 @@ def run(args, output):
         raise exp
 
     # Verify that mandatory variable are in the config file
-    for variable in "miner_api", "markets_api", "daemon_api":
+    for variable in "miner_api", "markets_api", "daemon_api", "markets_type":
         if variable not in config.keys():
             logging.error(f"{variable} not found in {config_file}")
             logging.info("Re-run the install.sh script or add it to the config file manually")
@@ -1356,10 +1646,20 @@ def run(args, output):
             raise MinerError("config value miner_ip " + str(exp))
 
         # Create the markets object instance
-        try:
-            markets = Markets(*get_url_and_token(config["markets_api"]))
-        except Exception as exp:
-            raise MarketsError("config value markets_ip " + str(exp))
+        if config["markets_type"] == "boost":
+            if "boost_graphql" not in config.keys():
+                raise BoostError("config value boost_graphql not set")
+            if "boost_api" not in config.keys():
+                raise BoostError("config value boost_api not set")
+            try:
+                markets = Boost(*get_url_and_token(config["boost_api"]), config["boost_graphql"])
+            except Exception as exp:
+                raise BoostError("config value boost_api " + str(exp))
+        else:
+            try:
+                markets = Markets(*get_url_and_token(config["markets_api"]))
+            except Exception as exp:
+                raise MarketsError("config value markets_api " + str(exp))
 
         # Load addresses lookup config file to retrieve external wallet and vlookup
         addresses_config = load_toml(args.farcaster_config_folder.joinpath("addresses.toml"))
@@ -1372,6 +1672,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action='version', version=VERSION)
+    parser.add_argument("--debug", action="store_true", help="Enable debug and python traceback")
     parser.add_argument("--log-level", default=os.environ.get("FARCASTER_LOG_LEVEL", "INFO"), help="Set log level")
     parser.add_argument("-c", "--farcaster-config-folder", default=Path.home().joinpath(".lotus-exporter-farcaster"), type=Path, help="Specifiy farcaster config path usually ~/.lotus-exporter-farcaster")
     output = parser.add_mutually_exclusive_group()
@@ -1399,9 +1700,11 @@ def main():
     try:
         run(args, output=sys.stdout)
     except Exception as exp:
-        logging.error(exp)
+        if args.debug:
+            logging.error(traceback.format_exc())
+        else:
+            logging.error(exp)
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
