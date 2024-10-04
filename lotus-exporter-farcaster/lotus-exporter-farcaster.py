@@ -30,6 +30,12 @@ SOFTWARE.
 # Boost Support
 # Introducing graphql
 
+# Release v3.1
+#   - Support for Lotus v1.28.1
+#   - Patch deprecated boost API
+#   - New chain dashboard integration (filescan)
+#   - Wincount panels
+
 # Release v3.0.2
 #   - Add --debug
 
@@ -1480,21 +1486,21 @@ def collect(daemon, miner, markets, metrics, addresses_config):
     metrics.checkpoint("Storage")
 
     # GENERATE MARKET INFO
-    market_info = markets.get_market_info_enhanced()
-    metrics.add("miner_market_info", value=1,
-                miner_id=miner_id,
-                retrieval_consider_online_deals=market_info["retrieval"]["ConsiderOnlineDeals"],
-                retrieval_consider_offline_deals=market_info["retrieval"]["ConsiderOfflineDeals"],
-                retrieval_price_per_byte=market_info["retrieval"]["PricePerByte"],
-                retrieval_unseal_price=market_info["retrieval"]["UnsealPrice"],
-                storage_consider_online_deals=market_info["storage"]["ConsiderOnlineDeals"],
-                storage_consider_offline_deals=market_info["storage"]["ConsiderOfflineDeals"],
-                storage_expiry=market_info["storage"]["Expiry"],
-                storage_max_piece_size=market_info["storage"]["MaxPieceSize"],
-                storage_min_piece_size=market_info["storage"]["MinPieceSize"],
-                storage_unverified_price=market_info["storage"]["Price"],
-                storage_verified_price=market_info["storage"]["VerifiedPrice"],
-                )
+    #market_info = markets.get_market_info_enhanced()
+    #metrics.add("miner_market_info", value=1,
+    #            miner_id=miner_id,
+    #            retrieval_consider_online_deals=market_info["retrieval"]["ConsiderOnlineDeals"],
+    #            retrieval_consider_offline_deals=market_info["retrieval"]["ConsiderOfflineDeals"],
+    #            retrieval_price_per_byte=market_info["retrieval"]["PricePerByte"],
+    #            retrieval_unseal_price=market_info["retrieval"]["UnsealPrice"],
+    #            storage_consider_online_deals=market_info["storage"]["ConsiderOnlineDeals"],
+    #            storage_consider_offline_deals=market_info["storage"]["ConsiderOfflineDeals"],
+    #            storage_expiry=market_info["storage"]["Expiry"],
+    #            storage_max_piece_size=market_info["storage"]["MaxPieceSize"],
+    #            storage_min_piece_size=market_info["storage"]["MinPieceSize"],
+    #            storage_unverified_price=market_info["storage"]["Price"],
+    #            storage_verified_price=market_info["storage"]["VerifiedPrice"],
+    #            )
 
     # GENERATE  DATA TRANSFERS XXX DISABLED AS NOT COMPATIBLE WITH BOOST, GENERATE DATA TRANSFER FOR ALL EXEISTING DEALS
 #    data_transfers = markets.get_market_data_transfers_enhanced()

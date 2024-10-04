@@ -6,7 +6,7 @@ https://www.fil-retropgf.io/projects/0x7f16baad8422a9c8188c4e2bc7daca6e79bf7ce49
 
 
 
-# VERSION 3 is out check our [website](http://twinquasar.io/farcaster.html) for upgrade instructions
+# VERSION 3.1 is out check our [website](http://twinquasar.io/farcaster.html) for upgrade instructions
 
 [<img src="https://github.com/s0nik42/lotus-farcaster/raw/main/images/screenshots/screenshot001.png">](https://www.youtube.com/playlist?list=PLqtm8BaRkX-YAiJN2BnQfdXwNGt8ao6Op)
 
