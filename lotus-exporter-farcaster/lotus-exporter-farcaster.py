@@ -1402,11 +1402,15 @@ def collect(daemon, miner, markets, metrics, addresses_config):
         packed_date = ""
         finalized_date = ""
 
+        if detail["result"]["Log"]:
+            creation_date = detail["result"]["Log"][0]["Timestamp"]
+
         for log in range(len(detail["result"]["Log"])):
             if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorPacked":
                 packed_date = detail["result"]["Log"][log]["Timestamp"]
             if detail["result"]["Log"][log]["Kind"] == "event;sealing.SectorFinalized":
                 finalized_date = detail["result"]["Log"][log]["Timestamp"]
+
         try:
             if detail["result"]["Log"][0]["Kind"] == "event;sealing.SectorStartCC":
                 pledged = 1
