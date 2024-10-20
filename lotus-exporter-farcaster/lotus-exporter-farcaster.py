@@ -907,6 +907,7 @@ class Metrics():
         "chain_basefee"                             : {"type" : "gauge", "help": "return current basefee"},
         "chain_sync_diff"                           : {"type" : "gauge", "help": "return daemon sync height diff with chainhead for each daemon worker"},
         "chain_sync_status"                         : {"type" : "gauge", "help": "return daemon sync status with chainhead for each daemon worker"},
+        "net_public_reachability"                   : {"type" : "gauge", "help": "return if the host is publically reachable"},
         "info"                                      : {"type" : "gauge", "help": "lotus daemon information like address version, value is set to network version number"},
         "local_time"                                : {"type" : "gauge", "help": "time on the node machine when last execution start in epoch"},
         "miner_data_transfers"                      : {"type" : "gauge", "help": "data-transfer information"},
@@ -1130,6 +1131,10 @@ def collect(daemon, miner, markets, metrics, addresses_config):
     daemon_network_version = daemon.get("StateNetworkVersion", [daemon.tipset_key()])
     daemon_version = daemon.get("Version", [])
     metrics.add("info", value=daemon_network_version["result"], miner_id=miner_id, version=daemon_version["result"]["Version"], network=daemon_network["result"])
+
+    # GENERATE DAEMON INFO
+    daemon_net = daemon.get("NetAutoNatStatus",[])
+    metrics.add("net_public_reachability", value=daemon_net["result"]["Reachability"], miner_id=miner_id)
     metrics.checkpoint("Daemon")
 
     # GENERATE WALLET
